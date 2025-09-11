@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/search/presentation/pages/home_search_page.dart';
+import '../../features/search/presentation/pages/search_history_page.dart';
 import '../../features/results/presentation/pages/results_page.dart';
 import '../../features/trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/booking/presentation/pages/booking_page.dart';
-import '../../features/manage/presentation/pages/manage_booking_page.dart';
+import '../../features/booking/presentation/pages/manage_booking_page.dart';
+import '../../features/manage/presentation/pages/manage_booking_page.dart'
+    as manage;
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/tickets/presentation/pages/ticket_page.dart';
+import '../../features/favorites/presentation/pages/favorites_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/support/presentation/pages/faq_page.dart';
+import '../../features/support/presentation/pages/contact_support_page.dart';
+import '../../features/support/presentation/pages/terms_policy_page.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -86,6 +94,48 @@ class AppRouter {
           final bookingId = state.pathParameters['bookingId']!;
           return TicketPage(bookingId: bookingId);
         },
+      ),
+
+      // Search history
+      GoRoute(
+        path: '/search-history',
+        name: 'searchHistory',
+        builder: (context, state) => const SearchHistoryPage(),
+      ),
+
+      // Favorites
+      GoRoute(
+        path: '/favorites',
+        name: 'favorites',
+        builder: (context, state) => const FavoritesPage(),
+      ),
+
+      // Notifications
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsPage(),
+      ),
+
+      // FAQ
+      GoRoute(
+        path: '/faq',
+        name: 'faq',
+        builder: (context, state) => const FAQPage(),
+      ),
+
+      // Contact Support
+      GoRoute(
+        path: '/contact-support',
+        name: 'contactSupport',
+        builder: (context, state) => const ContactSupportPage(),
+      ),
+
+      // Terms & Policy
+      GoRoute(
+        path: '/terms-policy',
+        name: 'termsPolicy',
+        builder: (context, state) => const TermsPolicyPage(),
       ),
     ],
     errorBuilder: (context, state) => AppErrorPage(error: state.error),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -48,7 +49,9 @@ class ProfilePage extends ConsumerWidget {
                           Text(
                             'Chưa đăng nhập',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -59,7 +62,9 @@ class ProfilePage extends ConsumerWidget {
                         // TODO: Implement login
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Tính năng đăng nhập sẽ được cập nhật sau'),
+                            content: Text(
+                              'Tính năng đăng nhập sẽ được cập nhật sau',
+                            ),
                           ),
                         );
                       },
@@ -73,95 +78,78 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Menu sections
-            _buildMenuSection(
-              context,
-              'Đặt vé & Quản lý',
-              [
-                _MenuItem(
-                  icon: Icons.history,
-                  title: 'Lịch sử tìm kiếm',
-                  subtitle: 'Xem các tìm kiếm gần đây',
-                  onTap: () => _showComingSoon(context),
-                ),
-                _MenuItem(
-                  icon: Icons.receipt_long,
-                  title: 'Quản lý đặt vé',
-                  subtitle: 'Tra cứu và quản lý vé đã đặt',
-                  onTap: () {
-                    // TODO: Navigate to manage booking
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chuyển đến quản lý đặt vé')),
-                    );
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.favorite,
-                  title: 'Yêu thích',
-                  subtitle: 'Các chuyến và địa điểm yêu thích',
-                  onTap: () => _showComingSoon(context),
-                ),
-              ],
-            ),
+            _buildMenuSection(context, 'Đặt vé & Quản lý', [
+              _MenuItem(
+                icon: Icons.history,
+                title: 'Lịch sử tìm kiếm',
+                subtitle: 'Xem các tìm kiếm gần đây',
+                onTap: () => context.pushNamed('searchHistory'),
+              ),
+              _MenuItem(
+                icon: Icons.receipt_long,
+                title: 'Quản lý đặt vé',
+                subtitle: 'Tra cứu và quản lý vé đã đặt',
+                onTap: () => context.pushNamed('manage'),
+              ),
+              _MenuItem(
+                icon: Icons.favorite,
+                title: 'Yêu thích',
+                subtitle: 'Các chuyến và địa điểm yêu thích',
+                onTap: () => context.pushNamed('favorites'),
+              ),
+            ]),
 
             const SizedBox(height: 16),
 
-            _buildMenuSection(
-              context,
-              'Cài đặt',
-              [
-                _MenuItem(
-                  icon: Icons.notifications,
-                  title: 'Thông báo',
-                  subtitle: 'Quản lý thông báo push',
-                  onTap: () => _showNotificationSettings(context),
-                ),
-                _MenuItem(
-                  icon: Icons.language,
-                  title: 'Ngôn ngữ',
-                  subtitle: 'Tiếng Việt',
-                  onTap: () => _showLanguageSettings(context),
-                ),
-                _MenuItem(
-                  icon: Icons.dark_mode,
-                  title: 'Giao diện',
-                  subtitle: 'Sáng/Tối',
-                  onTap: () => _showThemeSettings(context),
-                ),
-              ],
-            ),
+            _buildMenuSection(context, 'Cài đặt', [
+              _MenuItem(
+                icon: Icons.notifications,
+                title: 'Thông báo',
+                subtitle: 'Quản lý thông báo push',
+                onTap: () => context.pushNamed('notifications'),
+              ),
+              _MenuItem(
+                icon: Icons.language,
+                title: 'Ngôn ngữ',
+                subtitle: 'Tiếng Việt',
+                onTap: () => _showLanguageSettings(context),
+              ),
+              _MenuItem(
+                icon: Icons.dark_mode,
+                title: 'Giao diện',
+                subtitle: 'Sáng/Tối',
+                onTap: () => _showThemeSettings(context),
+              ),
+            ]),
 
             const SizedBox(height: 16),
 
-            _buildMenuSection(
-              context,
-              'Hỗ trợ',
-              [
-                _MenuItem(
-                  icon: Icons.help,
-                  title: 'Câu hỏi thường gặp',
-                  subtitle: 'FAQ và hướng dẫn sử dụng',
-                  onTap: () => _showComingSoon(context),
-                ),
-                _MenuItem(
-                  icon: Icons.support_agent,
-                  title: 'Liên hệ hỗ trợ',
-                  subtitle: 'Chat hoặc gọi điện hỗ trợ',
-                  onTap: () => _showSupport(context),
-                ),
-                _MenuItem(
-                  icon: Icons.policy,
-                  title: 'Chính sách & Điều khoản',
-                  subtitle: 'Quy định sử dụng dịch vụ',
-                  onTap: () => _showComingSoon(context),
-                ),
-                _MenuItem(
-                  icon: Icons.info,
-                  title: 'Về DatVe360',
-                  subtitle: 'Phiên bản 1.0.0',
-                  onTap: () => _showAbout(context),
-                ),
-              ],
-            ),
+            _buildMenuSection(context, 'Hỗ trợ', [
+              _MenuItem(
+                icon: Icons.help,
+                title: 'Câu hỏi thường gặp',
+                subtitle: 'FAQ và hướng dẫn sử dụng',
+                onTap: () => context.pushNamed('faq'),
+              ),
+              _MenuItem(
+                icon: Icons.support_agent,
+                title: 'Liên hệ hỗ trợ',
+                subtitle: 'Chat hoặc gọi điện hỗ trợ',
+                onTap: () => context.pushNamed('contactSupport'),
+              ),
+              _MenuItem(
+                icon: Icons.policy,
+                title: 'Chính sách & Điều khoản',
+                subtitle: 'Quy định sử dụng dịch vụ',
+                onTap: () => context.pushNamed('termsPolicy'),
+              ),
+              _MenuItem(
+                icon: Icons.info,
+                title: 'Về DatVe360',
+                subtitle: 'Phiên bản 1.0.0',
+                onTap: () => _showAbout(context),
+              ),
+            ]),
 
             const SizedBox(height: 32),
 
@@ -208,13 +196,15 @@ class ProfilePage extends ConsumerWidget {
             children: items.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
-              
+
               return Column(
                 children: [
                   ListTile(
                     leading: Icon(item.icon),
                     title: Text(item.title),
-                    subtitle: item.subtitle != null ? Text(item.subtitle!) : null,
+                    subtitle: item.subtitle != null
+                        ? Text(item.subtitle!)
+                        : null,
                     trailing: const Icon(Icons.chevron_right),
                     onTap: item.onTap,
                   ),
@@ -231,7 +221,9 @@ class ProfilePage extends ConsumerWidget {
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Tính năng này sẽ được cập nhật trong phiên bản tiếp theo'),
+        content: Text(
+          'Tính năng này sẽ được cập nhật trong phiên bản tiếp theo',
+        ),
       ),
     );
   }
@@ -241,7 +233,9 @@ class ProfilePage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cài đặt thông báo'),
-        content: const Text('Tính năng cài đặt thông báo sẽ được cập nhật sau.'),
+        content: const Text(
+          'Tính năng cài đặt thông báo sẽ được cập nhật sau.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
