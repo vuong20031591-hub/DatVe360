@@ -1,165 +1,270 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../trip_detail/data/models/seat.dart';
-import '../../results/data/models/trip.dart';
 
-part 'booking.freezed.dart';
-part 'booking.g.dart';
+class Booking {
+  final String id;
+  final String pnr;
+  final String tripId;
+  final List<Passenger> passengers;
+  final String selectedClass;
+  final List<String> selectedSeats;
+  final BookingStatus status;
+  final double totalPrice;
+  final String currency;
+  final DateTime createdAt;
+  final DateTime? confirmedAt;
+  final DateTime? cancelledAt;
+  final Map<String, dynamic> metadata;
 
-@freezed
-class Booking with _$Booking {
-  const factory Booking({
-    required String id,
-    required String pnr,
-    required Trip trip,
-    required List<Passenger> passengers,
-    required ClassOption selectedClass,
-    required List<Seat> selectedSeats,
-    required BookingStatus status,
-    required double totalPrice,
-    required String currency,
-    required DateTime createdAt,
+  const Booking({
+    required this.id,
+    required this.pnr,
+    required this.tripId,
+    required this.passengers,
+    required this.selectedClass,
+    required this.selectedSeats,
+    required this.status,
+    required this.totalPrice,
+    required this.currency,
+    required this.createdAt,
+    this.confirmedAt,
+    this.cancelledAt,
+    this.metadata = const {},
+  });
+
+  factory Booking.fromJson(Map<String, dynamic> json) {
+    return Booking(
+      id: json['id'] ?? '',
+      pnr: json['pnr'] ?? '',
+      tripId: json['tripId'] ?? '',
+      passengers:
+          (json['passengers'] as List?)
+              ?.map((e) => Passenger.fromJson(e))
+              .toList() ??
+          [],
+      selectedClass: json['selectedClass'] ?? '',
+      selectedSeats: List<String>.from(json['selectedSeats'] ?? []),
+      status: BookingStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => BookingStatus.pending,
+      ),
+      totalPrice: (json['totalPrice'] ?? 0).toDouble(),
+      currency: json['currency'] ?? 'VND',
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      confirmedAt: json['confirmedAt'] != null
+          ? DateTime.parse(json['confirmedAt'])
+          : null,
+      cancelledAt: json['cancelledAt'] != null
+          ? DateTime.parse(json['cancelledAt'])
+          : null,
+      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'pnr': pnr,
+      'tripId': tripId,
+      'passengers': passengers.map((e) => e.toJson()).toList(),
+      'selectedClass': selectedClass,
+      'selectedSeats': selectedSeats,
+      'status': status.name,
+      'totalPrice': totalPrice,
+      'currency': currency,
+      'createdAt': createdAt.toIso8601String(),
+      'confirmedAt': confirmedAt?.toIso8601String(),
+      'cancelledAt': cancelledAt?.toIso8601String(),
+      'metadata': metadata,
+    };
+  }
+
+  Booking copyWith({
+    String? id,
+    String? pnr,
+    String? tripId,
+    List<Passenger>? passengers,
+    String? selectedClass,
+    List<String>? selectedSeats,
+    BookingStatus? status,
+    double? totalPrice,
+    String? currency,
+    DateTime? createdAt,
     DateTime? confirmedAt,
     DateTime? cancelledAt,
-    @Default({}) Map<String, dynamic> metadata,
-  }) = _Booking;
-
-  factory Booking.fromJson(Map<String, dynamic> json) => _$BookingFromJson(json);
-}
-
-@freezed
-class Passenger with _$Passenger {
-  const factory Passenger({
-    required String id,
-    required PassengerType type,
-    required String firstName,
-    required String lastName,
-    DateTime? dateOfBirth,
-    String? documentId,
-    String? email,
-    String? phone,
-    @Default({}) Map<String, dynamic> metadata,
-  }) = _Passenger;
-
-  factory Passenger.fromJson(Map<String, dynamic> json) =>
-      _$PassengerFromJson(json);
-}
-
-@freezed
-class BookingRequest with _$BookingRequest {
-  const factory BookingRequest({
-    required String tripId,
-    required String classId,
-    required List<String> seatIds,
-    required List<Passenger> passengers,
-    required ContactInfo contactInfo,
-    @Default({}) Map<String, dynamic> metadata,
-  }) = _BookingRequest;
-
-  factory BookingRequest.fromJson(Map<String, dynamic> json) =>
-      _$BookingRequestFromJson(json);
-}
-
-@freezed
-class ContactInfo with _$ContactInfo {
-  const factory ContactInfo({
-    required String email,
-    required String phone,
-    String? firstName,
-    String? lastName,
-  }) = _ContactInfo;
-
-  factory ContactInfo.fromJson(Map<String, dynamic> json) =>
-      _$ContactInfoFromJson(json);
-}
-
-extension PassengerX on Passenger {
-  String get fullName => '$firstName $lastName';
-  
-  String get displayName {
-    final typeText = type.displayName;
-    return '$fullName ($typeText)';
-  }
-  
-  bool get requiresDateOfBirth {
-    return type == PassengerType.child || type == PassengerType.infant;
-  }
-  
-  bool get requiresDocumentId {
-    return type == PassengerType.adult;
-  }
-  
-  int? get age {
-    if (dateOfBirth == null) return null;
-    final now = DateTime.now();
-    final age = now.year - dateOfBirth!.year;
-    if (now.month < dateOfBirth!.month ||
-        (now.month == dateOfBirth!.month && now.day < dateOfBirth!.day)) {
-      return age - 1;
-    }
-    return age;
-  }
-  
-  bool get isValid {
-    if (firstName.isEmpty || lastName.isEmpty) return false;
-    if (requiresDateOfBirth && dateOfBirth == null) return false;
-    if (requiresDocumentId && (documentId == null || documentId!.isEmpty)) {
-      return false;
-    }
-    return true;
+    Map<String, dynamic>? metadata,
+  }) {
+    return Booking(
+      id: id ?? this.id,
+      pnr: pnr ?? this.pnr,
+      tripId: tripId ?? this.tripId,
+      passengers: passengers ?? this.passengers,
+      selectedClass: selectedClass ?? this.selectedClass,
+      selectedSeats: selectedSeats ?? this.selectedSeats,
+      status: status ?? this.status,
+      totalPrice: totalPrice ?? this.totalPrice,
+      currency: currency ?? this.currency,
+      createdAt: createdAt ?? this.createdAt,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      metadata: metadata ?? this.metadata,
+    );
   }
 }
 
-extension BookingX on Booking {
-  String get statusText => status.displayName;
-  
-  bool get canCancel {
-    return status == BookingStatus.pending || status == BookingStatus.confirmed;
+class Passenger {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final PassengerType type;
+  final String documentType;
+  final String documentId;
+  final DateTime? dateOfBirth;
+  final String? nationality;
+  final String? gender;
+  final Map<String, dynamic> metadata;
+
+  const Passenger({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.type,
+    required this.documentType,
+    required this.documentId,
+    this.dateOfBirth,
+    this.nationality,
+    this.gender,
+    this.metadata = const {},
+  });
+
+  factory Passenger.fromJson(Map<String, dynamic> json) {
+    return Passenger(
+      id: json['id'] ?? '',
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
+      type: PassengerType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => PassengerType.adult,
+      ),
+      documentType: json['documentType'] ?? '',
+      documentId: json['documentId'] ?? '',
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.parse(json['dateOfBirth'])
+          : null,
+      nationality: json['nationality'],
+      gender: json['gender'],
+      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
+    );
   }
-  
-  bool get isActive {
-    return status == BookingStatus.confirmed || status == BookingStatus.pending;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'firstName': firstName,
+      'lastName': lastName,
+      'type': type.name,
+      'documentType': documentType,
+      'documentId': documentId,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'nationality': nationality,
+      'gender': gender,
+      'metadata': metadata,
+    };
   }
-  
-  String get departureText {
-    return '${trip.departTimeText} - ${trip.from}';
+}
+
+class BookingRequest {
+  final String tripId;
+  final List<Passenger> passengers;
+  final String selectedClass;
+  final List<String> selectedSeats;
+  final ContactInfo contactInfo;
+  final PaymentMethod paymentMethod;
+  final Map<String, dynamic> metadata;
+
+  const BookingRequest({
+    required this.tripId,
+    required this.passengers,
+    required this.selectedClass,
+    required this.selectedSeats,
+    required this.contactInfo,
+    required this.paymentMethod,
+    this.metadata = const {},
+  });
+
+  factory BookingRequest.fromJson(Map<String, dynamic> json) {
+    return BookingRequest(
+      tripId: json['tripId'] ?? '',
+      passengers:
+          (json['passengers'] as List?)
+              ?.map((e) => Passenger.fromJson(e))
+              .toList() ??
+          [],
+      selectedClass: json['selectedClass'] ?? '',
+      selectedSeats: List<String>.from(json['selectedSeats'] ?? []),
+      contactInfo: ContactInfo.fromJson(json['contactInfo'] ?? {}),
+      paymentMethod: PaymentMethod.values.firstWhere(
+        (e) => e.name == json['paymentMethod'],
+        orElse: () => PaymentMethod.vnpay,
+      ),
+      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
+    );
   }
-  
-  String get arrivalText {
-    return '${trip.arriveTimeText} - ${trip.to}';
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tripId': tripId,
+      'passengers': passengers.map((e) => e.toJson()).toList(),
+      'selectedClass': selectedClass,
+      'selectedSeats': selectedSeats,
+      'contactInfo': contactInfo.toJson(),
+      'paymentMethod': paymentMethod.name,
+      'metadata': metadata,
+    };
   }
-  
-  String get passengerSummary {
-    final adults = passengers.where((p) => p.type == PassengerType.adult).length;
-    final children = passengers.where((p) => p.type == PassengerType.child).length;
-    final infants = passengers.where((p) => p.type == PassengerType.infant).length;
-    
-    final parts = <String>[];
-    if (adults > 0) parts.add('$adults người lớn');
-    if (children > 0) parts.add('$children trẻ em');
-    if (infants > 0) parts.add('$infants em bé');
-    
-    return parts.join(', ');
+}
+
+class ContactInfo {
+  final String email;
+  final String phone;
+  final String? firstName;
+  final String? lastName;
+  final String? address;
+  final String? city;
+  final String? country;
+
+  const ContactInfo({
+    required this.email,
+    required this.phone,
+    this.firstName,
+    this.lastName,
+    this.address,
+    this.city,
+    this.country,
+  });
+
+  factory ContactInfo.fromJson(Map<String, dynamic> json) {
+    return ContactInfo(
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      firstName: json['firstName'],
+      lastName: json['lastName'],
+      address: json['address'],
+      city: json['city'],
+      country: json['country'],
+    );
   }
-  
-  String get seatSummary {
-    if (selectedSeats.isEmpty) return 'Chưa chọn ghế';
-    return selectedSeats.map((seat) => seat.seatNumber).join(', ');
-  }
-  
-  double get basePrice {
-    return selectedClass.price * passengers.length;
-  }
-  
-  double get seatPrice {
-    return selectedSeats.fold(0.0, (sum, seat) => sum + seat.priceAddon);
-  }
-  
-  double get taxes {
-    return totalPrice * 0.1; // 10% tax
-  }
-  
-  double get serviceFee {
-    return 50000; // Fixed service fee
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'phone': phone,
+      'firstName': firstName,
+      'lastName': lastName,
+      'address': address,
+      'city': city,
+      'country': country,
+    };
   }
 }

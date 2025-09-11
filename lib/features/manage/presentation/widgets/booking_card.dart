@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
 
@@ -77,20 +76,19 @@ class BookingCard extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(
-                            trip['from'],
-                            style: theme.textTheme.bodyMedium,
-                          ),
+                          Text(trip['from'], style: theme.textTheme.bodyMedium),
                           Text(
                             _formatDate(trip['departDate']),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     Column(
                       children: [
                         Icon(
@@ -107,7 +105,7 @@ class BookingCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -126,7 +124,9 @@ class BookingCard extends StatelessWidget {
                           Text(
                             _formatDate(trip['departDate']),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
                             ),
                           ),
                         ],
@@ -134,11 +134,11 @@ class BookingCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 16),
-                
+
                 // Passenger and seat info
                 Row(
                   children: [
@@ -160,9 +160,9 @@ class BookingCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -183,9 +183,9 @@ class BookingCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Action buttons
                 Row(
                   children: [
@@ -198,7 +198,7 @@ class BookingCard extends StatelessWidget {
                         size: AppButtonSize.small,
                       ),
                     ),
-                    
+
                     if (onCancel != null) ...[
                       const SizedBox(width: 12),
                       Expanded(

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/app_constants.dart';
+import 'exceptions.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'interceptors/retry_interceptor.dart';
@@ -38,13 +39,13 @@ class DioClient {
 
   void _setupInterceptors() {
     _dio.interceptors.clear();
-    
+
     // Add auth interceptor
     _dio.interceptors.add(AuthInterceptor());
-    
+
     // Add retry interceptor
     _dio.interceptors.add(RetryInterceptor());
-    
+
     // Add logging interceptor (only in debug mode)
     if (kDebugMode) {
       _dio.interceptors.add(LoggingInterceptor());
@@ -207,51 +208,66 @@ class DioClient {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
-          return NetworkException('Kết nối mạng bị gián đoạn. Vui lòng thử lại.');
-        
+          return TimeoutException(
+            'Kết nối mạng bị gián đoạn. Vui lòng thử lại.',
+          );
+
         case DioExceptionType.badResponse:
           return _handleHttpError(error.response);
-        
+
         case DioExceptionType.cancel:
-          return NetworkException('Yêu cầu đã bị hủy.');
-        
+          return GeneralNetworkException('Yêu cầu đã bị hủy.');
+
         case DioExceptionType.connectionError:
-          return NetworkException('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
-        
+          return NoInternetException(
+            'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
+          );
+
         default:
-          return NetworkException('Đã xảy ra lỗi không xác định.');
+          return GeneralNetworkException('Đã xảy ra lỗi không xác định.');
       }
     }
-    
-    return NetworkException('Đã xảy ra lỗi không xác định.');
+
+    return GeneralNetworkException('Đã xảy ra lỗi không xác định.');
   }
 
   Exception _handleHttpError(Response? response) {
     if (response == null) {
-      return NetworkException('Không nhận được phản hồi từ máy chủ.');
+      return GeneralNetworkException('Không nhận được phản hồi từ máy chủ.');
     }
 
     switch (response.statusCode) {
       case 400:
         return BadRequestException(_getErrorMessage(response));
       case 401:
-        return UnauthorizedException('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return UnauthorizedException(
+          'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+        );
       case 403:
-        return ForbiddenException('Bạn không có quyền truy cập tài nguyên này.');
+        return ForbiddenException(
+          'Bạn không có quyền truy cập tài nguyên này.',
+        );
       case 404:
         return NotFoundException('Không tìm thấy tài nguyên yêu cầu.');
       case 422:
         return ValidationException(_getErrorMessage(response));
       case 429:
-        return TooManyRequestsException('Quá nhiều yêu cầu. Vui lòng thử lại sau.');
+        return TooManyRequestsException(
+          'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
+        );
       case 500:
         return ServerException('Lỗi máy chủ nội bộ. Vui lòng thử lại sau.');
       case 502:
         return ServerException('Máy chủ không phản hồi. Vui lòng thử lại sau.');
       case 503:
-        return ServerException('Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.');
+        return ServerException(
+          'Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.',
+        );
       default:
-        return NetworkException('Lỗi HTTP ${response.statusCode}: ${response.statusMessage}');
+        return GeneralNetworkException(
+          'Lỗi HTTP ${response.statusCode}: ${response.statusMessage}',
+          statusCode: response.statusCode,
+        );
     }
   }
 
@@ -259,7 +275,9 @@ class DioClient {
     try {
       final data = response.data;
       if (data is Map<String, dynamic>) {
-        return data['message'] ?? data['error'] ?? 'Đã xảy ra lỗi không xác định.';
+        return data['message'] ??
+            data['error'] ??
+            'Đã xảy ra lỗi không xác định.';
       }
       return 'Đã xảy ra lỗi không xác định.';
     } catch (e) {
@@ -288,7 +306,7 @@ class DioClient {
 abstract class NetworkException implements Exception {
   final String message;
   NetworkException(this.message);
-  
+
   @override
   String toString() => message;
 }

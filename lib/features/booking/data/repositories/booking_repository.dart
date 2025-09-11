@@ -1,7 +1,9 @@
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../models/booking.dart';
 
 class BookingRepository {
+  // ignore: unused_field
   final DioClient _dioClient;
 
   BookingRepository(this._dioClient);
@@ -12,7 +14,7 @@ class BookingRepository {
       // TODO: Implement real API call
       // final response = await _dioClient.post('/bookings', data: bookingData);
       // return Booking.fromJson(response.data);
-      
+
       // For now, create mock booking
       return _createMockBooking(bookingData);
     } catch (e) {
@@ -26,7 +28,7 @@ class BookingRepository {
       // TODO: Implement real API call
       // final response = await _dioClient.get('/bookings/$bookingId');
       // return Booking.fromJson(response.data);
-      
+
       // For now, return mock booking
       return _getMockBookingById(bookingId);
     } catch (e) {
@@ -38,11 +40,11 @@ class BookingRepository {
   Future<List<Booking>> searchBookings(String bookingId, String email) async {
     try {
       // TODO: Implement real API call
-      // final response = await _dioClient.get('/bookings/search', 
+      // final response = await _dioClient.get('/bookings/search',
       //   queryParameters: {'booking_id': bookingId, 'email': email});
       // final List<dynamic> data = response.data['bookings'];
       // return data.map((json) => Booking.fromJson(json)).toList();
-      
+
       // For now, return mock search results
       return _searchMockBookings(bookingId, email);
     } catch (e) {
@@ -54,10 +56,10 @@ class BookingRepository {
   Future<bool> cancelBooking(String bookingId, String reason) async {
     try {
       // TODO: Implement real API call
-      // final response = await _dioClient.post('/bookings/$bookingId/cancel', 
+      // final response = await _dioClient.post('/bookings/$bookingId/cancel',
       //   data: {'reason': reason});
       // return response.data['success'] ?? false;
-      
+
       // For now, simulate cancellation
       await Future.delayed(const Duration(seconds: 1));
       return true;
@@ -67,20 +69,20 @@ class BookingRepository {
   }
 
   // Update booking
-  Future<Booking> updateBooking(String bookingId, Map<String, dynamic> updates) async {
+  Future<Booking> updateBooking(
+    String bookingId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       // TODO: Implement real API call
       // final response = await _dioClient.put('/bookings/$bookingId', data: updates);
       // return Booking.fromJson(response.data);
-      
+
       // For now, return updated mock booking
       final booking = await getBookingById(bookingId);
       if (booking == null) throw Exception('Booking not found');
-      
-      return booking.copyWith(
-        status: updates['status'] ?? booking.status,
-        updatedAt: DateTime.now(),
-      );
+
+      return booking.copyWith(status: updates['status'] ?? booking.status);
     } catch (e) {
       throw Exception('Failed to update booking: $e');
     }
@@ -93,7 +95,7 @@ class BookingRepository {
       // final response = await _dioClient.get('/users/$userId/bookings');
       // final List<dynamic> data = response.data['bookings'];
       // return data.map((json) => Booking.fromJson(json)).toList();
-      
+
       // For now, return mock user bookings
       return _getMockUserBookings(userId);
     } catch (e) {
@@ -102,15 +104,18 @@ class BookingRepository {
   }
 
   // Process payment
-  Future<Map<String, dynamic>> processPayment(String bookingId, Map<String, dynamic> paymentData) async {
+  Future<Map<String, dynamic>> processPayment(
+    String bookingId,
+    Map<String, dynamic> paymentData,
+  ) async {
     try {
       // TODO: Implement real payment processing
       // final response = await _dioClient.post('/bookings/$bookingId/payment', data: paymentData);
       // return response.data;
-      
+
       // For now, simulate payment processing
       await Future.delayed(const Duration(seconds: 2));
-      
+
       return {
         'success': true,
         'transaction_id': 'TXN_${DateTime.now().millisecondsSinceEpoch}',
@@ -126,21 +131,27 @@ class BookingRepository {
 
   // Mock data methods
   Booking _createMockBooking(Map<String, dynamic> bookingData) {
-    final bookingId = 'DV360${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-    
+    final bookingId =
+        'DV360${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+
+    // Convert passengers from Map to Passenger objects
+    final passengersList =
+        (bookingData['passengers'] as List?)
+            ?.map((p) => Passenger.fromJson(p as Map<String, dynamic>))
+            .toList() ??
+        [];
+
     return Booking(
       id: bookingId,
       pnr: 'ABC123',
       status: BookingStatus.confirmed,
       tripId: bookingData['trip']?['id'] ?? 'unknown',
-      passengers: List<Map<String, dynamic>>.from(bookingData['passengers'] ?? []),
-      contactInfo: Map<String, dynamic>.from(bookingData['contactInfo'] ?? {}),
+      passengers: passengersList,
+      selectedClass: bookingData['selectedClass'] ?? 'economy',
       selectedSeats: List<String>.from(bookingData['selectedSeats'] ?? []),
-      totalPrice: bookingData['totalPrice'] ?? 1430000,
-      paymentMethod: bookingData['paymentMethod'] ?? 'vnpay',
-      paymentStatus: PaymentStatus.completed,
+      totalPrice: (bookingData['totalPrice'] ?? 1430000).toDouble(),
+      currency: bookingData['currency'] ?? 'VND',
       createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
     );
   }
 
@@ -153,28 +164,33 @@ class BookingRepository {
         status: BookingStatus.confirmed,
         tripId: 'VN210_20241201_0600',
         passengers: [
-          {'firstName': 'Văn A', 'lastName': 'Nguyễn', 'type': 'adult'},
+          Passenger(
+            id: 'p1',
+            firstName: 'Văn A',
+            lastName: 'Nguyễn',
+            type: PassengerType.adult,
+            documentType: 'passport',
+            documentId: 'A1234567',
+            dateOfBirth: DateTime(1990, 1, 1),
+            gender: 'male',
+            nationality: 'VN',
+          ),
         ],
-        contactInfo: {
-          'name': 'Nguyễn Văn A',
-          'email': 'test@example.com',
-          'phone': '0123456789',
-        },
+        selectedClass: 'economy',
         selectedSeats: ['12A'],
         totalPrice: 1430000,
-        paymentMethod: 'vnpay',
-        paymentStatus: PaymentStatus.completed,
+        currency: 'VND',
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
       );
     }
-    
+
     return null;
   }
 
   List<Booking> _searchMockBookings(String bookingId, String email) {
     final booking = _getMockBookingById(bookingId);
-    if (booking != null && booking.contactInfo['email'] == email) {
+    if (booking != null) {
+      // For mock data, just return the booking if found
       return [booking];
     }
     return [];
@@ -188,19 +204,23 @@ class BookingRepository {
         status: BookingStatus.confirmed,
         tripId: 'VN210_20241201_0600',
         passengers: [
-          {'firstName': 'Văn A', 'lastName': 'Nguyễn', 'type': 'adult'},
+          Passenger(
+            id: 'p1',
+            firstName: 'Văn A',
+            lastName: 'Nguyễn',
+            type: PassengerType.adult,
+            documentType: 'passport',
+            documentId: 'A1234567',
+            dateOfBirth: DateTime(1990, 1, 1),
+            gender: 'male',
+            nationality: 'VN',
+          ),
         ],
-        contactInfo: {
-          'name': 'Nguyễn Văn A',
-          'email': 'user@example.com',
-          'phone': '0123456789',
-        },
+        selectedClass: 'economy',
         selectedSeats: ['12A'],
         totalPrice: 1430000,
-        paymentMethod: 'vnpay',
-        paymentStatus: PaymentStatus.completed,
+        currency: 'VND',
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
       ),
       Booking(
         id: 'DV360124',
@@ -208,19 +228,23 @@ class BookingRepository {
         status: BookingStatus.pending,
         tripId: 'VJ150_20241205_0730',
         passengers: [
-          {'firstName': 'Thị B', 'lastName': 'Trần', 'type': 'adult'},
+          Passenger(
+            id: 'p2',
+            firstName: 'Thị B',
+            lastName: 'Trần',
+            type: PassengerType.adult,
+            documentType: 'passport',
+            documentId: 'B7654321',
+            dateOfBirth: DateTime(1985, 5, 15),
+            gender: 'female',
+            nationality: 'VN',
+          ),
         ],
-        contactInfo: {
-          'name': 'Trần Thị B',
-          'email': 'user@example.com',
-          'phone': '0123456789',
-        },
+        selectedClass: 'economy',
         selectedSeats: ['15C'],
         totalPrice: 999000,
-        paymentMethod: 'momo',
-        paymentStatus: PaymentStatus.pending,
+        currency: 'VND',
         createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
       ),
     ];
   }

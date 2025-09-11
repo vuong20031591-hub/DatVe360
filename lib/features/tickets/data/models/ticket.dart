@@ -1,42 +1,113 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../booking/data/models/booking.dart';
+class Ticket {
+  final String id;
+  final String bookingId;
+  final String pnr;
+  final String qrData;
+  final String? pdfPath;
+  final DateTime issuedAt;
+  final DateTime? validUntil;
+  final bool isUsed;
+  final Map<String, dynamic> metadata;
 
-part 'ticket.freezed.dart';
-part 'ticket.g.dart';
+  const Ticket({
+    required this.id,
+    required this.bookingId,
+    required this.pnr,
+    required this.qrData,
+    this.pdfPath,
+    required this.issuedAt,
+    this.validUntil,
+    this.isUsed = false,
+    this.metadata = const {},
+  });
 
-@freezed
-class Ticket with _$Ticket {
-  const factory Ticket({
-    required String id,
-    required String bookingId,
-    required String pnr,
-    required String qrData,
-    String? pdfPath,
-    required DateTime issuedAt,
-    DateTime? validUntil,
-    @Default(false) bool isUsed,
-    @Default({}) Map<String, dynamic> metadata,
-  }) = _Ticket;
+  factory Ticket.fromJson(Map<String, dynamic> json) {
+    return Ticket(
+      id: json['id'] ?? '',
+      bookingId: json['bookingId'] ?? '',
+      pnr: json['pnr'] ?? '',
+      qrData: json['qrData'] ?? '',
+      pdfPath: json['pdfPath'],
+      issuedAt: DateTime.parse(
+        json['issuedAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      validUntil: json['validUntil'] != null
+          ? DateTime.parse(json['validUntil'])
+          : null,
+      isUsed: json['isUsed'] ?? false,
+      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
+    );
+  }
 
-  factory Ticket.fromJson(Map<String, dynamic> json) => _$TicketFromJson(json);
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'bookingId': bookingId,
+      'pnr': pnr,
+      'qrData': qrData,
+      'pdfPath': pdfPath,
+      'issuedAt': issuedAt.toIso8601String(),
+      'validUntil': validUntil?.toIso8601String(),
+      'isUsed': isUsed,
+      'metadata': metadata,
+    };
+  }
 }
 
-@freezed
-class QRTicketData with _$QRTicketData {
-  const factory QRTicketData({
-    required String bookingId,
-    required String pnr,
-    required String passengerName,
-    required String from,
-    required String to,
-    required DateTime departAt,
-    required String seatNumber,
-    required String carrierName,
-    required DateTime issuedAt,
-  }) = _QRTicketData;
+class QRTicketData {
+  final String bookingId;
+  final String pnr;
+  final String passengerName;
+  final String from;
+  final String to;
+  final DateTime departAt;
+  final String seatNumber;
+  final String carrierName;
+  final DateTime issuedAt;
 
-  factory QRTicketData.fromJson(Map<String, dynamic> json) =>
-      _$QRTicketDataFromJson(json);
+  const QRTicketData({
+    required this.bookingId,
+    required this.pnr,
+    required this.passengerName,
+    required this.from,
+    required this.to,
+    required this.departAt,
+    required this.seatNumber,
+    required this.carrierName,
+    required this.issuedAt,
+  });
+
+  factory QRTicketData.fromJson(Map<String, dynamic> json) {
+    return QRTicketData(
+      bookingId: json['bookingId'] ?? '',
+      pnr: json['pnr'] ?? '',
+      passengerName: json['passengerName'] ?? '',
+      from: json['from'] ?? '',
+      to: json['to'] ?? '',
+      departAt: DateTime.parse(
+        json['departAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      seatNumber: json['seatNumber'] ?? '',
+      carrierName: json['carrierName'] ?? '',
+      issuedAt: DateTime.parse(
+        json['issuedAt'] ?? DateTime.now().toIso8601String(),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'bookingId': bookingId,
+      'pnr': pnr,
+      'passengerName': passengerName,
+      'from': from,
+      'to': to,
+      'departAt': departAt.toIso8601String(),
+      'seatNumber': seatNumber,
+      'carrierName': carrierName,
+      'issuedAt': issuedAt.toIso8601String(),
+    };
+  }
 }
 
 extension TicketX on Ticket {
@@ -47,17 +118,17 @@ extension TicketX on Ticket {
     }
     return true;
   }
-  
+
   bool get isExpired {
     return validUntil != null && DateTime.now().isAfter(validUntil!);
   }
-  
+
   String get statusText {
     if (isUsed) return 'Đã sử dụng';
     if (isExpired) return 'Đã hết hạn';
     return 'Có hiệu lực';
   }
-  
+
   bool get hasPdf => pdfPath != null && pdfPath!.isNotEmpty;
 }
 
@@ -67,12 +138,12 @@ extension QRTicketDataX on QRTicketData {
         '${departAt.millisecondsSinceEpoch}|$seatNumber|$carrierName|'
         '${issuedAt.millisecondsSinceEpoch}';
   }
-  
+
   static QRTicketData? fromQRString(String qrString) {
     try {
       final parts = qrString.split('|');
       if (parts.length != 10 || parts[0] != 'DATVE360') return null;
-      
+
       return QRTicketData(
         bookingId: parts[1],
         pnr: parts[2],

@@ -21,7 +21,7 @@ class _StepPassengerState extends State<StepPassenger> {
   final _formKey = GlobalKey<FormState>();
   final List<GlobalKey<FormState>> _passengerFormKeys = [];
   final List<Map<String, TextEditingController>> _passengerControllers = [];
-  
+
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
   final _contactNameController = TextEditingController();
@@ -38,23 +38,24 @@ class _StepPassengerState extends State<StepPassenger> {
     _contactEmailController.dispose();
     _contactPhoneController.dispose();
     _contactNameController.dispose();
-    
+
     for (final controllers in _passengerControllers) {
       for (final controller in controllers.values) {
         controller.dispose();
       }
     }
-    
+
     super.dispose();
   }
 
   void _initializePassengers() {
-    final selectedSeats = widget.bookingData['selectedSeats'] as List<String>? ?? [];
+    final selectedSeats =
+        widget.bookingData['selectedSeats'] as List<String>? ?? [];
     final passengerCount = selectedSeats.length;
-    
+
     _passengerFormKeys.clear();
     _passengerControllers.clear();
-    
+
     for (int i = 0; i < passengerCount; i++) {
       _passengerFormKeys.add(GlobalKey<FormState>());
       _passengerControllers.add({
@@ -69,17 +70,23 @@ class _StepPassengerState extends State<StepPassenger> {
   }
 
   void _loadExistingData() {
-    final contactInfo = widget.bookingData['contactInfo'] as Map<String, dynamic>? ?? {};
-    final passengers = widget.bookingData['passengers'] as List<Map<String, dynamic>>? ?? [];
-    
+    final contactInfo =
+        widget.bookingData['contactInfo'] as Map<String, dynamic>? ?? {};
+    final passengers =
+        widget.bookingData['passengers'] as List<Map<String, dynamic>>? ?? [];
+
     _contactEmailController.text = contactInfo['email'] ?? '';
     _contactPhoneController.text = contactInfo['phone'] ?? '';
     _contactNameController.text = contactInfo['name'] ?? '';
-    
-    for (int i = 0; i < passengers.length && i < _passengerControllers.length; i++) {
+
+    for (
+      int i = 0;
+      i < passengers.length && i < _passengerControllers.length;
+      i++
+    ) {
       final passenger = passengers[i];
       final controllers = _passengerControllers[i];
-      
+
       controllers['firstName']?.text = passenger['firstName'] ?? '';
       controllers['lastName']?.text = passenger['lastName'] ?? '';
       controllers['dateOfBirth']?.text = passenger['dateOfBirth'] ?? '';
@@ -92,7 +99,8 @@ class _StepPassengerState extends State<StepPassenger> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final selectedSeats = widget.bookingData['selectedSeats'] as List<String>? ?? [];
+    final selectedSeats =
+        widget.bookingData['selectedSeats'] as List<String>? ?? [];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -123,9 +131,9 @@ class _StepPassengerState extends State<StepPassenger> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     AppTextField(
                       controller: _contactNameController,
                       label: 'Họ và tên người liên hệ',
@@ -139,17 +147,17 @@ class _StepPassengerState extends State<StepPassenger> {
                       },
                       onChanged: _saveData,
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     AppEmailField(
                       controller: _contactEmailController,
                       label: 'Email nhận vé',
                       onChanged: _saveData,
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     AppPhoneField(
                       controller: _contactPhoneController,
                       label: 'Số điện thoại',
@@ -159,14 +167,14 @@ class _StepPassengerState extends State<StepPassenger> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Passenger information
             ...selectedSeats.asMap().entries.map((entry) {
               final index = entry.key;
               final seat = entry.value;
-              
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Card(
@@ -192,14 +200,15 @@ class _StepPassengerState extends State<StepPassenger> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           Row(
                             children: [
                               Expanded(
                                 child: AppTextField(
-                                  controller: _passengerControllers[index]['lastName']!,
+                                  controller:
+                                      _passengerControllers[index]['lastName']!,
                                   label: 'Họ',
                                   hint: 'Nguyễn',
                                   validator: (value) {
@@ -214,7 +223,8 @@ class _StepPassengerState extends State<StepPassenger> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: AppTextField(
-                                  controller: _passengerControllers[index]['firstName']!,
+                                  controller:
+                                      _passengerControllers[index]['firstName']!,
                                   label: 'Tên',
                                   hint: 'Văn A',
                                   validator: (value) {
@@ -228,11 +238,12 @@ class _StepPassengerState extends State<StepPassenger> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           AppTextField(
-                            controller: _passengerControllers[index]['dateOfBirth']!,
+                            controller:
+                                _passengerControllers[index]['dateOfBirth']!,
                             label: 'Ngày sinh',
                             hint: 'dd/mm/yyyy',
                             prefixIcon: Icons.calendar_today,
@@ -245,28 +256,43 @@ class _StepPassengerState extends State<StepPassenger> {
                               return null;
                             },
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           Row(
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  value: _passengerControllers[index]['idType']!.text.isNotEmpty
-                                      ? _passengerControllers[index]['idType']!.text
+                                  initialValue:
+                                      _passengerControllers[index]['idType']!
+                                          .text
+                                          .isNotEmpty
+                                      ? _passengerControllers[index]['idType']!
+                                            .text
                                       : 'CCCD',
                                   decoration: const InputDecoration(
                                     labelText: 'Loại giấy tờ',
                                     prefixIcon: Icon(Icons.badge),
                                   ),
                                   items: const [
-                                    DropdownMenuItem(value: 'CCCD', child: Text('CCCD')),
-                                    DropdownMenuItem(value: 'CMND', child: Text('CMND')),
-                                    DropdownMenuItem(value: 'Passport', child: Text('Hộ chiếu')),
+                                    DropdownMenuItem(
+                                      value: 'CCCD',
+                                      child: Text('CCCD'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'CMND',
+                                      child: Text('CMND'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Passport',
+                                      child: Text('Hộ chiếu'),
+                                    ),
                                   ],
                                   onChanged: (value) {
                                     if (value != null) {
-                                      _passengerControllers[index]['idType']!.text = value;
+                                      _passengerControllers[index]['idType']!
+                                              .text =
+                                          value;
                                       _saveData();
                                     }
                                   },
@@ -275,7 +301,8 @@ class _StepPassengerState extends State<StepPassenger> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: AppTextField(
-                                  controller: _passengerControllers[index]['idNumber']!,
+                                  controller:
+                                      _passengerControllers[index]['idNumber']!,
                                   label: 'Số giấy tờ',
                                   hint: '001234567890',
                                   validator: (value) {
@@ -289,11 +316,12 @@ class _StepPassengerState extends State<StepPassenger> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           AppTextField(
-                            controller: _passengerControllers[index]['nationality']!,
+                            controller:
+                                _passengerControllers[index]['nationality']!,
                             label: 'Quốc tịch',
                             hint: 'Việt Nam',
                             prefixIcon: Icons.flag,
@@ -311,10 +339,10 @@ class _StepPassengerState extends State<StepPassenger> {
                   ),
                 ),
               );
-            }).toList(),
-            
+            }),
+
             const SizedBox(height: 16),
-            
+
             // Quick fill button
             if (_passengerControllers.length > 1)
               SizedBox(
@@ -339,7 +367,7 @@ class _StepPassengerState extends State<StepPassenger> {
       firstDate: DateTime.now().subtract(const Duration(days: 365 * 100)),
       lastDate: DateTime.now(),
     );
-    
+
     if (date != null) {
       _passengerControllers[passengerIndex]['dateOfBirth']!.text =
           '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -348,16 +376,21 @@ class _StepPassengerState extends State<StepPassenger> {
   }
 
   void _quickFillFromContact() {
-    if (_contactNameController.text.isNotEmpty && _passengerControllers.isNotEmpty) {
+    if (_contactNameController.text.isNotEmpty &&
+        _passengerControllers.isNotEmpty) {
       final nameParts = _contactNameController.text.split(' ');
       if (nameParts.length >= 2) {
         _passengerControllers[0]['lastName']!.text = nameParts.first;
-        _passengerControllers[0]['firstName']!.text = nameParts.skip(1).join(' ');
+        _passengerControllers[0]['firstName']!.text = nameParts
+            .skip(1)
+            .join(' ');
         _saveData();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đã điền thông tin hành khách đầu tiên từ thông tin liên hệ'),
+            content: Text(
+              'Đã điền thông tin hành khách đầu tiên từ thông tin liên hệ',
+            ),
           ),
         );
       }
@@ -370,16 +403,20 @@ class _StepPassengerState extends State<StepPassenger> {
       'email': _contactEmailController.text,
       'phone': _contactPhoneController.text,
     };
-    
-    final passengers = _passengerControllers.map((controllers) => {
-      'firstName': controllers['firstName']!.text,
-      'lastName': controllers['lastName']!.text,
-      'dateOfBirth': controllers['dateOfBirth']!.text,
-      'nationality': controllers['nationality']!.text,
-      'idNumber': controllers['idNumber']!.text,
-      'idType': controllers['idType']!.text,
-    }).toList();
-    
+
+    final passengers = _passengerControllers
+        .map(
+          (controllers) => {
+            'firstName': controllers['firstName']!.text,
+            'lastName': controllers['lastName']!.text,
+            'dateOfBirth': controllers['dateOfBirth']!.text,
+            'nationality': controllers['nationality']!.text,
+            'idNumber': controllers['idNumber']!.text,
+            'idType': controllers['idType']!.text,
+          },
+        )
+        .toList();
+
     widget.onDataChanged({
       'contactInfo': contactInfo,
       'passengers': passengers,

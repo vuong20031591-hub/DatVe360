@@ -16,7 +16,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
   final _formKey = GlobalKey<FormState>();
   final _bookingIdController = TextEditingController();
   final _emailController = TextEditingController();
-  
+
   bool _isLoading = false;
   List<Map<String, dynamic>> _bookings = [];
   bool _hasSearched = false;
@@ -33,9 +33,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quản lý đặt vé'),
-      ),
+      appBar: AppBar(title: const Text('Quản lý đặt vé')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
@@ -57,7 +55,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       AppTextField(
                         controller: _bookingIdController,
                         label: 'Mã đặt vé',
@@ -74,16 +72,16 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
                           return null;
                         },
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       AppEmailField(
                         controller: _emailController,
                         label: 'Email đặt vé',
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       SizedBox(
                         width: double.infinity,
                         child: AppButton(
@@ -98,9 +96,9 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Search results
             if (_hasSearched) ...[
               Text(
@@ -110,24 +108,28 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               if (_bookings.isEmpty)
                 _buildEmptyState(theme)
               else
-                ..._bookings.map((booking) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: BookingCard(
-                    booking: booking,
-                    onViewTicket: () => _viewTicket(booking['id']),
-                    onCancel: booking['status'] == 'confirmed' 
-                        ? () => _cancelBooking(booking['id'])
-                        : null,
-                  ),
-                )).toList(),
+                ..._bookings
+                    .map(
+                      (booking) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: BookingCard(
+                          booking: booking,
+                          onViewTicket: () => _viewTicket(booking['id']),
+                          onCancel: booking['status'] == 'confirmed'
+                              ? () => _cancelBooking(booking['id'])
+                              : null,
+                        ),
+                      ),
+                    )
+                    .toList(),
             ],
-            
+
             const SizedBox(height: 32),
-            
+
             // Help section
             _buildHelpSection(theme),
           ],
@@ -149,7 +151,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
           Icon(
             Icons.search_off,
             size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -162,7 +164,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
           Text(
             'Vui lòng kiểm tra lại mã đặt vé và email.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -180,10 +182,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.help_outline,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.help_outline, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   'Cần hỗ trợ?',
@@ -194,35 +193,25 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             _buildHelpItem(
               theme,
               Icons.email,
               'Email hỗ trợ',
               'support@datve360.com',
             ),
-            
-            _buildHelpItem(
-              theme,
-              Icons.phone,
-              'Hotline',
-              '1900 1234',
-            ),
-            
-            _buildHelpItem(
-              theme,
-              Icons.schedule,
-              'Thời gian hỗ trợ',
-              '24/7',
-            ),
-            
+
+            _buildHelpItem(theme, Icons.phone, 'Hotline', '1900 1234'),
+
+            _buildHelpItem(theme, Icons.schedule, 'Thời gian hỗ trợ', '24/7'),
+
             const SizedBox(height: 16),
-            
+
             Text(
               'Lưu ý: Mã đặt vé được gửi qua email sau khi thanh toán thành công. '
               'Vui lòng kiểm tra cả hộp thư spam.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -232,7 +221,12 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
     );
   }
 
-  Widget _buildHelpItem(ThemeData theme, IconData icon, String title, String value) {
+  Widget _buildHelpItem(
+    ThemeData theme,
+    IconData icon,
+    String title,
+    String value,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -240,7 +234,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
           Icon(
             icon,
             size: 16,
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
           const SizedBox(width: 8),
           Text(
@@ -274,7 +268,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
     // Mock search result
     final bookingId = _bookingIdController.text.toUpperCase();
     final email = _emailController.text.toLowerCase();
-    
+
     // Simulate finding booking
     if (bookingId == 'DV360123' && email == 'test@example.com') {
       _bookings = [_getMockBooking()];
@@ -290,11 +284,9 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
 
   void _viewTicket(String bookingId) {
     // TODO: Navigate to ticket page
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Xem vé: $bookingId'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Xem vé: $bookingId')));
   }
 
   void _cancelBooking(String bookingId) {
@@ -316,9 +308,7 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
               Navigator.pop(context);
               // TODO: Cancel booking
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Đã hủy đặt vé: $bookingId'),
-                ),
+                SnackBar(content: Text('Đã hủy đặt vé: $bookingId')),
               );
             },
             child: const Text('Hủy vé'),

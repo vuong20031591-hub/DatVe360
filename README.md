@@ -1,16 +1,127 @@
-# datve360
+# DatVe360 - Ứng dụng đặt vé đa phương tiện 🚀
 
-A new Flutter project.
+Xin chào mọi người! Mình xin giới thiệu về dự án **DatVe360** - một ứng dụng mobile đặt vé tích hợp đa phương tiện giao thông mà mình vừa hoàn thành.
 
-## Getting Started
+## 🎯 Ý tưởng dự án
 
-This project is a starting point for a Flutter application.
+Bạn biết đấy, việc đặt vé máy bay, tàu hỏa, xe khách hay phà hiện tại phải vào từng app riêng biệt rất bất tiện. Vì vậy mình đã nghĩ ra ý tưởng tạo một ứng dụng **"all-in-one"** để người dùng có thể:
 
-A few resources to get you started if this is your first Flutter project:
+- 🛫 Đặt vé máy bay
+- 🚄 Đặt vé tàu hỏa
+- 🚌 Đặt vé xe khách
+- ⛴️ Đặt vé phà
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Tất cả trong một ứng dụng duy nhất!
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🏗️ Kiến trúc và công nghệ
+
+Mình đã áp dụng **Clean Architecture** để dự án dễ maintain và scale:
+
+```
+lib/
+├── app/                    # Cấu hình app chính
+│   ├── router/            # GoRouter navigation
+│   └── theme/             # Material 3 theme
+├── core/                  # Core utilities
+│   ├── constants/         # App constants
+│   ├── i18n/             # Đa ngôn ngữ (Vi/En)
+│   └── providers/        # Riverpod providers
+├── features/             # Các tính năng chính
+│   ├── search/           # Tìm kiếm chuyến đi
+│   ├── results/          # Kết quả tìm kiếm
+│   ├── booking/          # Đặt vé
+│   ├── manage/           # Quản lý booking
+│   ├── tickets/          # Vé điện tử
+│   └── profile/          # Tài khoản
+└── shared/               # Widgets dùng chung
+```
+
+**Tech Stack:**
+- **Flutter** - Framework chính
+- **Riverpod** - State management
+- **GoRouter** - Navigation
+- **Hive** - Local storage
+- **Firebase** - Backend services
+- **Material 3** - Design system
+
+## ✨ Tính năng đã hoàn thành
+
+### 🔍 Trang tìm kiếm chính
+- Tab chuyển đổi giữa các phương tiện (Flight/Train/Bus/Ferry)
+- Form tìm kiếm với validation đầy đủ
+- Popular destinations carousel
+- Recent searches history
+- Material 3 design đẹp mắt
+
+### 🧭 Navigation hiện đại
+- **NavigationBar Material 3** thay vì BottomNavigationBar cũ
+- Haptic feedback khi tap
+- Smooth animations
+- Badge system sẵn sàng cho notifications
+- Icons outlined/filled cho states
+
+### 🎨 UI/UX
+- **Material 3 Design Language**
+- Light/Dark theme support
+- Responsive design
+- Vietnamese/English localization
+- Clean và modern interface
+
+## 🚀 Cách chạy dự án
+
+```bash
+# Clone repository
+git clone https://github.com/your-username/datve360.git
+cd datve360
+
+# Cài đặt dependencies
+flutter pub get
+
+# Chạy app
+flutter run
+```
+
+## 📱 Screenshots
+
+*Sẽ cập nhật screenshots sau khi test trên thiết bị thật*
+
+## 🎓 Điều mình học được
+
+Qua dự án này, mình đã học được rất nhiều:
+
+1. **Clean Architecture** - Cách tổ chức code professional
+2. **State Management** - Sử dụng Riverpod hiệu quả
+3. **Material 3** - Design system mới nhất của Google
+4. **Navigation** - GoRouter cho complex routing
+5. **Localization** - Hỗ trợ đa ngôn ngữ
+6. **Performance** - Optimize app cho mobile
+
+## 🔮 Kế hoạch tiếp theo
+
+- [ ] Hoàn thiện booking flow
+- [ ] Tích hợp payment gateway
+- [ ] QR code cho vé điện tử
+- [ ] Push notifications
+- [ ] Offline support
+- [ ] Unit tests
+- [ ] Deploy lên Google Play Store
+
+## 🤝 Đóng góp
+
+Mọi người có thể contribute bằng cách:
+- Report bugs
+- Suggest features
+- Submit pull requests
+- Review code
+
+## 📞 Liên hệ
+
+Nếu có câu hỏi gì về dự án, mọi người có thể liên hệ mình qua:
+- Email: your-email@example.com
+- GitHub: @your-username
+
+---
+
+**Cảm ơn mọi người đã quan tâm đến dự án DatVe360! 🙏**
+
+*"Một ứng dụng - Mọi chuyến đi"* ✈️🚄🚌⛴️

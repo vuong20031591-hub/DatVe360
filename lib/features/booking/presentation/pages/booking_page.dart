@@ -7,11 +7,7 @@ import '../wizard/step_passenger.dart';
 import '../wizard/step_payment.dart';
 
 class BookingPage extends ConsumerStatefulWidget {
-  const BookingPage({
-    super.key,
-    this.trip,
-    this.selectedSeats,
-  });
+  const BookingPage({super.key, this.trip, this.selectedSeats});
 
   final Map<String, dynamic>? trip;
   final List<String>? selectedSeats;
@@ -23,7 +19,7 @@ class BookingPage extends ConsumerStatefulWidget {
 class _BookingPageState extends ConsumerState<BookingPage> {
   int _currentStep = 0;
   final PageController _pageController = PageController();
-  
+
   Map<String, dynamic> _bookingData = {};
 
   @override
@@ -59,7 +55,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
           preferredSize: const Size.fromHeight(4),
           child: LinearProgressIndicator(
             value: (_currentStep + 1) / 3,
-            backgroundColor: theme.colorScheme.surfaceVariant,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(
               theme.colorScheme.primary,
             ),
@@ -73,9 +69,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(color: theme.dividerColor),
-              ),
+              border: Border(bottom: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
@@ -132,9 +126,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              border: Border(
-                top: BorderSide(color: theme.dividerColor),
-              ),
+              border: Border(top: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
@@ -152,7 +144,9 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                   child: AppButton(
                     onPressed: _canProceed() ? _nextStep : null,
                     text: _currentStep == 2 ? 'Thanh toán' : 'Tiếp theo',
-                    icon: _currentStep == 2 ? Icons.payment : Icons.arrow_forward,
+                    icon: _currentStep == 2
+                        ? Icons.payment
+                        : Icons.arrow_forward,
                   ),
                 ),
               ],
@@ -178,8 +172,8 @@ class _BookingPageState extends ConsumerState<BookingPage> {
               color: isCompleted
                   ? theme.colorScheme.primary
                   : isActive
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surfaceVariant,
+                  ? theme.colorScheme.primaryContainer
+                  : theme.colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -187,8 +181,8 @@ class _BookingPageState extends ConsumerState<BookingPage> {
               color: isCompleted
                   ? theme.colorScheme.onPrimary
                   : isActive
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurfaceVariant,
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurfaceVariant,
               size: 20,
             ),
           ),
@@ -198,7 +192,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             style: theme.textTheme.bodySmall?.copyWith(
               color: isActive
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
@@ -209,7 +203,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
 
   Widget _buildStepConnector() {
     final theme = Theme.of(context);
-    
+
     return Expanded(
       child: Container(
         height: 2,
@@ -257,11 +251,9 @@ class _BookingPageState extends ConsumerState<BookingPage> {
 
   void _processPayment() {
     // TODO: Process payment
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang xử lý thanh toán...'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đang xử lý thanh toán...')));
   }
 
   void _handlePaymentComplete(String bookingId) {
@@ -272,7 +264,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
         backgroundColor: Colors.green,
       ),
     );
-    
+
     // Navigate back to home or to ticket page
     Navigator.of(context).popUntil((route) => route.isFirst);
   }

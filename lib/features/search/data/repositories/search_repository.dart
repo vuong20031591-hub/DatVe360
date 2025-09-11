@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../models/search_query.dart';
 import '../../../results/data/models/trip.dart';
 
 class SearchRepository {
+  // ignore: unused_field
   final DioClient _dioClient;
 
   SearchRepository(this._dioClient);
@@ -14,7 +16,7 @@ class SearchRepository {
     try {
       // For now, use mock data
       return await _getMockTrips(query);
-      
+
       // TODO: Implement real API call
       // final response = await _dioClient.post('/search', data: query.toJson());
       // final List<dynamic> data = response.data['trips'];
@@ -27,7 +29,9 @@ class SearchRepository {
   // Get popular destinations
   Future<List<Map<String, dynamic>>> getPopularDestinations() async {
     try {
-      final String response = await rootBundle.loadString('assets/data/mock_data.json');
+      final String response = await rootBundle.loadString(
+        'assets/data/mock_data.json',
+      );
       final Map<String, dynamic> data = json.decode(response);
       return List<Map<String, dynamic>>.from(data['popular_routes']);
     } catch (e) {
@@ -38,7 +42,9 @@ class SearchRepository {
   // Get airports
   Future<List<Map<String, dynamic>>> getAirports() async {
     try {
-      final String response = await rootBundle.loadString('assets/data/mock_data.json');
+      final String response = await rootBundle.loadString(
+        'assets/data/mock_data.json',
+      );
       final Map<String, dynamic> data = json.decode(response);
       return List<Map<String, dynamic>>.from(data['airports']);
     } catch (e) {
@@ -51,16 +57,16 @@ class SearchRepository {
     try {
       final airports = await getAirports();
       if (query.isEmpty) return airports;
-      
+
       return airports.where((airport) {
         final name = airport['name'].toString().toLowerCase();
         final city = airport['city'].toString().toLowerCase();
         final code = airport['code'].toString().toLowerCase();
         final searchQuery = query.toLowerCase();
-        
-        return name.contains(searchQuery) || 
-               city.contains(searchQuery) || 
-               code.contains(searchQuery);
+
+        return name.contains(searchQuery) ||
+            city.contains(searchQuery) ||
+            code.contains(searchQuery);
       }).toList();
     } catch (e) {
       throw Exception('Failed to search airports: $e');
@@ -70,16 +76,18 @@ class SearchRepository {
   // Mock data for development
   Future<List<Trip>> _getMockTrips(SearchQuery query) async {
     await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-    
-    final String response = await rootBundle.loadString('assets/data/mock_data.json');
+
+    final String response = await rootBundle.loadString(
+      'assets/data/mock_data.json',
+    );
     final Map<String, dynamic> data = json.decode(response);
     final List<dynamic> sampleTrips = data['sample_trips'];
-    
+
     // Filter trips based on search query
     final filteredTrips = sampleTrips.where((tripData) {
       return tripData['from'] == query.from && tripData['to'] == query.to;
     }).toList();
-    
+
     // Convert to Trip objects
     final trips = <Trip>[];
     for (final tripData in filteredTrips) {
@@ -87,121 +95,166 @@ class SearchRepository {
         return ClassOption(
           id: classData['id'],
           name: classData['name'],
-          price: classData['price'],
-          availableSeats: classData['availableSeats'],
+          displayName: classData['displayName'] ?? classData['name'],
+          price: (classData['price'] as num).toDouble(),
+          priceAddon: (classData['priceAddon'] as num?)?.toDouble() ?? 0,
           amenities: List<String>.from(classData['amenities']),
-          baggage: classData['baggage'],
-          refundPolicy: classData['refundPolicy'],
-          changePolicy: classData['changePolicy'],
+          metadata: {
+            'availableSeats': classData['availableSeats'],
+            'baggage': classData['baggage'],
+            'refundPolicy': classData['refundPolicy'],
+            'changePolicy': classData['changePolicy'],
+          },
         );
       }).toList();
-      
-      trips.add(Trip(
-        id: tripData['id'],
-        carrier: tripData['carrier'],
-        carrierCode: tripData['carrierCode'],
-        flightNumber: tripData['flightNumber'],
-        from: tripData['from'],
-        to: tripData['to'],
-        fromName: tripData['fromName'],
-        toName: tripData['toName'],
-        departTime: tripData['departTime'],
-        arriveTime: tripData['arriveTime'],
-        departDate: DateTime.parse(tripData['departDate']),
-        arriveDate: DateTime.parse(tripData['arriveDate']),
-        duration: tripData['duration'],
-        aircraft: tripData['aircraft'],
-        classes: classes,
-      ));
+
+      final departDate = DateTime.parse(tripData['departDate']);
+      final arriveDate = DateTime.parse(tripData['arriveDate']);
+
+      trips.add(
+        Trip(
+          id: tripData['id'],
+          carrierId: tripData['carrierCode'],
+          carrierName: tripData['carrier'],
+          carrierLogo: tripData['carrierLogo'],
+          mode: TransportMode.flight,
+          from: tripData['fromName'],
+          fromCode: tripData['from'],
+          to: tripData['toName'],
+          toCode: tripData['to'],
+          departAt: departDate,
+          arriveAt: arriveDate,
+          duration: arriveDate.difference(departDate),
+          basePrice: (tripData['basePrice'] as num?)?.toDouble() ?? 1200000,
+          currency: 'VND',
+          stops: List<String>.from(tripData['stops'] ?? []),
+          classOptions: classes,
+          metadata: {
+            'aircraft': tripData['aircraft'],
+            'flightNumber': tripData['flightNumber'],
+          },
+        ),
+      );
     }
-    
+
     // If no trips found, return some sample data
     if (trips.isEmpty) {
       return _generateSampleTrips(query);
     }
-    
+
     return trips;
   }
 
   List<Trip> _generateSampleTrips(SearchQuery query) {
     final basePrice = _getBasePrice(query.from, query.to);
-    
+    final departAt = query.departDate.copyWith(hour: 6, minute: 0);
+    final arriveAt = query.departDate.copyWith(hour: 8, minute: 15);
+
     return [
       Trip(
         id: 'VN210_${query.departDate.millisecondsSinceEpoch}',
-        carrier: 'Vietnam Airlines',
-        carrierCode: 'VN',
-        flightNumber: 'VN210',
-        from: query.from,
-        to: query.to,
-        fromName: '${_getCityName(query.from)} (${query.from})',
-        toName: '${_getCityName(query.to)} (${query.to})',
-        departTime: '06:00',
-        arriveTime: '08:15',
-        departDate: query.departDate,
-        arriveDate: query.departDate,
-        duration: '2h 15m',
-        aircraft: 'Airbus A321',
-        classes: [
+        carrierId: 'VN',
+        carrierName: 'Vietnam Airlines',
+        carrierLogo: null,
+        mode: TransportMode.flight,
+        from: '${_getCityName(query.from)} (${query.from})',
+        fromCode: query.from,
+        to: '${_getCityName(query.to)} (${query.to})',
+        toCode: query.to,
+        departAt: departAt,
+        arriveAt: arriveAt,
+        duration: arriveAt.difference(departAt),
+        basePrice: basePrice.toDouble(),
+        currency: 'VND',
+        stops: [],
+        classOptions: [
           ClassOption(
             id: 'economy',
-            name: 'Phổ thông',
-            price: basePrice,
-            availableSeats: 45,
+            name: 'economy',
+            displayName: 'Phổ thông',
+            price: basePrice.toDouble(),
+            priceAddon: 0,
             amenities: ['Hành lý xách tay 7kg', 'Suất ăn nhẹ', 'Nước uống'],
-            baggage: '20kg hành lý ký gửi',
-            refundPolicy: 'Hoàn 70% phí vé trước 24h',
-            changePolicy: 'Đổi vé phí 200.000đ',
+            metadata: {
+              'availableSeats': 45,
+              'baggage': '20kg hành lý ký gửi',
+              'refundPolicy': 'Hoàn 70% phí vé trước 24h',
+              'changePolicy': 'Đổi vé phí 200.000đ',
+            },
           ),
           ClassOption(
             id: 'business',
-            name: 'Thương gia',
-            price: (basePrice * 2.1).round(),
-            availableSeats: 12,
-            amenities: ['Hành lý xách tay 10kg', 'Suất ăn cao cấp', 'Rượu vang', 'Ghế nằm'],
-            baggage: '30kg hành lý ký gửi',
-            refundPolicy: 'Hoàn 90% phí vé trước 2h',
-            changePolicy: 'Đổi vé miễn phí',
+            name: 'business',
+            displayName: 'Thương gia',
+            price: (basePrice * 2.1),
+            priceAddon: (basePrice * 1.1),
+            amenities: [
+              'Hành lý xách tay 10kg',
+              'Suất ăn cao cấp',
+              'Rượu vang',
+              'Ghế nằm',
+            ],
+            metadata: {
+              'availableSeats': 12,
+              'baggage': '30kg hành lý ký gửi',
+              'refundPolicy': 'Hoàn 90% phí vé trước 2h',
+              'changePolicy': 'Đổi vé miễn phí',
+            },
           ),
         ],
+        metadata: {'aircraft': 'Airbus A321', 'flightNumber': 'VN210'},
       ),
       Trip(
         id: 'VJ150_${query.departDate.millisecondsSinceEpoch}',
-        carrier: 'VietJet Air',
-        carrierCode: 'VJ',
-        flightNumber: 'VJ150',
-        from: query.from,
-        to: query.to,
-        fromName: '${_getCityName(query.from)} (${query.from})',
-        toName: '${_getCityName(query.to)} (${query.to})',
-        departTime: '07:30',
-        arriveTime: '09:45',
-        departDate: query.departDate,
-        arriveDate: query.departDate,
-        duration: '2h 15m',
-        aircraft: 'Airbus A320',
-        classes: [
+        carrierId: 'VJ',
+        carrierName: 'VietJet Air',
+        carrierLogo: null,
+        mode: TransportMode.flight,
+        from: '${_getCityName(query.from)} (${query.from})',
+        fromCode: query.from,
+        to: '${_getCityName(query.to)} (${query.to})',
+        toCode: query.to,
+        departAt: query.departDate.copyWith(hour: 7, minute: 30),
+        arriveAt: query.departDate.copyWith(hour: 9, minute: 45),
+        duration: const Duration(hours: 2, minutes: 15),
+        basePrice: (basePrice * 0.83),
+        currency: 'VND',
+        stops: [],
+        classOptions: [
           ClassOption(
             id: 'economy',
-            name: 'Eco',
-            price: (basePrice * 0.83).round(),
-            availableSeats: 38,
+            name: 'economy',
+            displayName: 'Eco',
+            price: (basePrice * 0.83),
+            priceAddon: 0,
             amenities: ['Hành lý xách tay 7kg'],
-            baggage: 'Không bao gồm',
-            refundPolicy: 'Không hoàn vé',
-            changePolicy: 'Đổi vé phí 300.000đ',
+            metadata: {
+              'availableSeats': 38,
+              'baggage': 'Không bao gồm',
+              'refundPolicy': 'Không hoàn vé',
+              'changePolicy': 'Đổi vé phí 300.000đ',
+            },
           ),
           ClassOption(
             id: 'skyboss',
-            name: 'SkyBoss',
-            price: (basePrice * 1.58).round(),
-            availableSeats: 8,
-            amenities: ['Hành lý xách tay 10kg', 'Suất ăn', 'Chọn ghế miễn phí'],
-            baggage: '20kg hành lý ký gửi',
-            refundPolicy: 'Hoàn 50% phí vé trước 24h',
-            changePolicy: 'Đổi vé phí 150.000đ',
+            name: 'skyboss',
+            displayName: 'SkyBoss',
+            price: (basePrice * 1.58),
+            priceAddon: (basePrice * 0.75),
+            amenities: [
+              'Hành lý xách tay 10kg',
+              'Suất ăn',
+              'Chọn ghế miễn phí',
+            ],
+            metadata: {
+              'availableSeats': 8,
+              'baggage': '20kg hành lý ký gửi',
+              'refundPolicy': 'Hoàn 50% phí vé trước 24h',
+              'changePolicy': 'Đổi vé phí 150.000đ',
+            },
           ),
         ],
+        metadata: {'aircraft': 'Airbus A320', 'flightNumber': 'VJ150'},
       ),
     ];
   }
@@ -210,9 +263,11 @@ class SearchRepository {
     // Simple price calculation based on route
     if ((from == 'HAN' && to == 'SGN') || (from == 'SGN' && to == 'HAN')) {
       return 1200000;
-    } else if ((from == 'HAN' && to == 'DAD') || (from == 'DAD' && to == 'HAN')) {
+    } else if ((from == 'HAN' && to == 'DAD') ||
+        (from == 'DAD' && to == 'HAN')) {
       return 800000;
-    } else if ((from == 'SGN' && to == 'PQC') || (from == 'PQC' && to == 'SGN')) {
+    } else if ((from == 'SGN' && to == 'PQC') ||
+        (from == 'PQC' && to == 'SGN')) {
       return 900000;
     }
     return 1000000; // Default price

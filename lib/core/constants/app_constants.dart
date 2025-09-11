@@ -121,3 +121,28 @@ enum PaymentMethod {
   final String value;
   final String displayName;
 }
+
+/// Payment status enum
+enum PaymentStatus {
+  pending('pending', 'Đang xử lý'),
+  completed('completed', 'Thành công'),
+  failed('failed', 'Thất bại'),
+  cancelled('cancelled', 'Đã hủy');
+
+  const PaymentStatus(this.value, this.displayName);
+  final String value;
+  final String displayName;
+}
+
+/// Seat type enum
+enum SeatType {
+  standard('standard', 'Ghế thường'),
+  premium('premium', 'Ghế cao cấp'),
+  exit('exit', 'Ghế lối thoát'),
+  window('window', 'Ghế cửa sổ'),
+  aisle('aisle', 'Ghế lối đi');
+
+  const SeatType(this.value, this.displayName);
+  final String value;
+  final String displayName;
+}

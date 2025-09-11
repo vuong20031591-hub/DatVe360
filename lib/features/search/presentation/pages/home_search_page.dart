@@ -89,7 +89,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
               },
             ),
           ),
-          
+
           // Search content
           Expanded(
             child: SingleChildScrollView(
@@ -98,18 +98,15 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Search card
-                  SearchCard(
-                    mode: _selectedMode,
-                    onSearch: _handleSearch,
-                  ),
-                  
+                  SearchCard(mode: _selectedMode, onSearch: _handleSearch),
+
                   const SizedBox(height: 32),
-                  
+
                   // Popular destinations
                   _buildPopularDestinations(context),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Recent searches
                   _buildRecentSearches(context),
                 ],
@@ -123,7 +120,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
   Widget _buildPopularDestinations(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,7 +175,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                destination['name'],
+                                destination['name'] ?? 'Unknown',
                                 style: theme.textTheme.titleSmall,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -207,7 +204,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
   Widget _buildRecentSearches(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -250,9 +247,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
   void _handleSearch(Map<String, dynamic> searchData) {
     // TODO: Navigate to results page with search data
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Tìm kiếm: ${searchData.toString()}'),
-      ),
+      SnackBar(content: Text('Tìm kiếm: ${searchData.toString()}')),
     );
   }
 
@@ -260,7 +255,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     // TODO: Pre-fill search form with destination
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Chọn điểm đến: ${destination['name']}'),
+        content: Text('Chọn điểm đến: ${destination['name'] ?? 'Unknown'}'),
       ),
     );
   }

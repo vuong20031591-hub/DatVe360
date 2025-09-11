@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/i18n/l10n.dart';
-import '../../../../shared/widgets/app_button.dart';
+
 import '../widgets/trip_card.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/sort_dropdown.dart';
@@ -10,10 +10,7 @@ import '../widgets/results_shimmer.dart';
 import '../widgets/empty_results.dart';
 
 class ResultsPage extends ConsumerStatefulWidget {
-  const ResultsPage({
-    super.key,
-    this.searchQuery,
-  });
+  const ResultsPage({super.key, this.searchQuery});
 
   final Map<String, dynamic>? searchQuery;
 
@@ -97,11 +94,9 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
         children: [
           // Search summary
           if (widget.searchQuery != null) _buildSearchSummary(context),
-          
+
           // Results
-          Expanded(
-            child: _buildResultsList(context),
-          ),
+          Expanded(child: _buildResultsList(context)),
         ],
       ),
     );
@@ -115,9 +110,7 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor),
-        ),
+        border: Border(bottom: BorderSide(color: theme.dividerColor)),
       ),
       child: Row(
         children: [
@@ -170,7 +163,7 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        await _loadResults();
+        _loadResults();
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -179,10 +172,7 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
           final trip = _trips[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: TripCard(
-              trip: trip,
-              onTap: () => _selectTrip(trip),
-            ),
+            child: TripCard(trip: trip, onTap: () => _selectTrip(trip)),
           );
         },
       ),

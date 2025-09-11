@@ -1,42 +1,81 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../core/constants/app_constants.dart';
 
-part 'search_query.freezed.dart';
-part 'search_query.g.dart';
+class SearchQuery {
+  final TransportMode mode;
+  final String from;
+  final String to;
+  final DateTime departDate;
+  final DateTime? returnDate;
+  final PassengerCount passengers;
+  final bool roundTrip;
 
-@freezed
-class SearchQuery with _$SearchQuery {
-  const factory SearchQuery({
-    required TransportMode mode,
-    required String from,
-    required String to,
-    required DateTime departDate,
-    DateTime? returnDate,
-    required PassengerCount passengers,
-    @Default(false) bool roundTrip,
-  }) = _SearchQuery;
+  const SearchQuery({
+    required this.mode,
+    required this.from,
+    required this.to,
+    required this.departDate,
+    this.returnDate,
+    required this.passengers,
+    this.roundTrip = false,
+  });
 
-  factory SearchQuery.fromJson(Map<String, dynamic> json) =>
-      _$SearchQueryFromJson(json);
+  factory SearchQuery.fromJson(Map<String, dynamic> json) {
+    return SearchQuery(
+      mode: TransportMode.values.firstWhere(
+        (e) => e.name == json['mode'],
+        orElse: () => TransportMode.flight,
+      ),
+      from: json['from'] ?? '',
+      to: json['to'] ?? '',
+      departDate: DateTime.parse(
+        json['departDate'] ?? DateTime.now().toIso8601String(),
+      ),
+      returnDate: json['returnDate'] != null
+          ? DateTime.parse(json['returnDate'])
+          : null,
+      passengers: PassengerCount.fromJson(json['passengers'] ?? {}),
+      roundTrip: json['roundTrip'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'mode': mode.name,
+      'from': from,
+      'to': to,
+      'departDate': departDate.toIso8601String(),
+      'returnDate': returnDate?.toIso8601String(),
+      'passengers': passengers.toJson(),
+      'roundTrip': roundTrip,
+    };
+  }
 }
 
-@freezed
-class PassengerCount with _$PassengerCount {
-  const factory PassengerCount({
-    @Default(1) int adult,
-    @Default(0) int child,
-    @Default(0) int infant,
-  }) = _PassengerCount;
+class PassengerCount {
+  final int adult;
+  final int child;
+  final int infant;
 
-  factory PassengerCount.fromJson(Map<String, dynamic> json) =>
-      _$PassengerCountFromJson(json);
+  const PassengerCount({this.adult = 1, this.child = 0, this.infant = 0});
+
+  factory PassengerCount.fromJson(Map<String, dynamic> json) {
+    return PassengerCount(
+      adult: json['adult'] ?? 1,
+      child: json['child'] ?? 0,
+      infant: json['infant'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'adult': adult, 'child': child, 'infant': infant};
+  }
 }
 
 extension PassengerCountX on PassengerCount {
   int get total => adult + child + infant;
-  
+
   bool get isValid => adult >= 1 && total <= AppConstants.maxPassengers;
-  
+
   String get displayText {
     final parts = <String>[];
     if (adult > 0) parts.add('$adult người lớn');
@@ -55,7 +94,7 @@ extension SearchQueryX on SearchQuery {
         passengers.isValid &&
         (returnDate == null || returnDate!.isAfter(departDate));
   }
-  
+
   String get cacheKey {
     return '${mode.value}_${from}_${to}_${departDate.millisecondsSinceEpoch}_'
         '${returnDate?.millisecondsSinceEpoch ?? 'null'}_'

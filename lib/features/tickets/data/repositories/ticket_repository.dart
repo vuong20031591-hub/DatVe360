@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import '../../../../core/network/dio_client.dart';
 
 class TicketRepository {
+  // ignore: unused_field
   final DioClient _dioClient;
 
   TicketRepository(this._dioClient);
@@ -12,7 +13,7 @@ class TicketRepository {
       // TODO: Implement real API call
       // final response = await _dioClient.get('/tickets/booking/$bookingId');
       // return response.data;
-      
+
       // For now, return mock ticket data
       return _getMockTicketData(bookingId);
     } catch (e) {
@@ -26,7 +27,7 @@ class TicketRepository {
       // TODO: Implement real QR generation
       // final response = await _dioClient.post('/tickets/$bookingId/qr');
       // return response.data['qr_data'];
-      
+
       // For now, generate mock QR data
       return _generateMockQRData(bookingId);
     } catch (e) {
@@ -41,7 +42,7 @@ class TicketRepository {
       // final response = await _dioClient.get('/tickets/$bookingId/pdf',
       //   options: Options(responseType: ResponseType.bytes));
       // return response.data;
-      
+
       // For now, return empty PDF data
       throw UnimplementedError('PDF generation not implemented yet');
     } catch (e) {
@@ -56,7 +57,7 @@ class TicketRepository {
       // final response = await _dioClient.post('/tickets/$bookingId/email',
       //   data: {'email': email});
       // return response.data['success'] ?? false;
-      
+
       // For now, simulate email sending
       await Future.delayed(const Duration(seconds: 1));
       return true;
@@ -71,7 +72,7 @@ class TicketRepository {
       // TODO: Implement real API call
       // final response = await _dioClient.get('/users/$userId/tickets');
       // return List<Map<String, dynamic>>.from(response.data['tickets']);
-      
+
       // For now, return mock ticket history
       return _getMockTicketHistory(userId);
     } catch (e) {
@@ -86,7 +87,7 @@ class TicketRepository {
       // final response = await _dioClient.post('/tickets/validate',
       //   data: {'qr_data': qrData});
       // return response.data;
-      
+
       // For now, simulate validation
       return _validateMockTicket(qrData);
     } catch (e) {
@@ -101,7 +102,7 @@ class TicketRepository {
       // final response = await _dioClient.post('/tickets/$bookingId/checkin',
       //   data: {'passenger_id': passengerId});
       // return response.data['success'] ?? false;
-      
+
       // For now, simulate check-in
       await Future.delayed(const Duration(seconds: 1));
       return true;
@@ -129,13 +130,15 @@ class TicketRepository {
           'depart_time': '06:00',
           'arrive_time': '08:15',
           'duration': '2h 15m',
-          'depart_date': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+          'depart_date': DateTime.now()
+              .add(const Duration(days: 7))
+              .toIso8601String(),
         },
         'status': 'active',
         'check_in_status': 'not_checked_in',
       };
     }
-    
+
     return null;
   }
 
@@ -159,10 +162,14 @@ class TicketRepository {
           'to': 'TP.HCM (SGN)',
           'depart_time': '06:00',
           'arrive_time': '08:15',
-          'depart_date': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+          'depart_date': DateTime.now()
+              .add(const Duration(days: 7))
+              .toIso8601String(),
         },
         'status': 'active',
-        'issued_at': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+        'issued_at': DateTime.now()
+            .subtract(const Duration(days: 1))
+            .toIso8601String(),
       },
       {
         'id': 'ticket_DV360122',
@@ -177,10 +184,14 @@ class TicketRepository {
           'to': 'Đà Nẵng (DAD)',
           'depart_time': '14:30',
           'arrive_time': '15:45',
-          'depart_date': DateTime.now().subtract(const Duration(days: 15)).toIso8601String(),
+          'depart_date': DateTime.now()
+              .subtract(const Duration(days: 15))
+              .toIso8601String(),
         },
         'status': 'used',
-        'issued_at': DateTime.now().subtract(const Duration(days: 16)).toIso8601String(),
+        'issued_at': DateTime.now()
+            .subtract(const Duration(days: 16))
+            .toIso8601String(),
       },
     ];
   }
@@ -195,16 +206,15 @@ class TicketRepository {
         'passenger_name': parts[3],
         'from': parts[4],
         'to': parts[5],
-        'depart_date': DateTime.fromMillisecondsSinceEpoch(int.parse(parts[6])).toIso8601String(),
+        'depart_date': DateTime.fromMillisecondsSinceEpoch(
+          int.parse(parts[6]),
+        ).toIso8601String(),
         'seat': parts[7],
         'carrier': parts[8],
         'validated_at': DateTime.now().toIso8601String(),
       };
     }
-    
-    return {
-      'valid': false,
-      'error': 'Invalid QR code format',
-    };
+
+    return {'valid': false, 'error': 'Invalid QR code format'};
   }
 }

@@ -1,7 +1,9 @@
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../models/trip.dart';
 
 class TripRepository {
+  // ignore: unused_field
   final DioClient _dioClient;
 
   TripRepository(this._dioClient);
@@ -12,7 +14,7 @@ class TripRepository {
       // TODO: Implement real API call
       // final response = await _dioClient.get('/trips/$tripId');
       // return Trip.fromJson(response.data);
-      
+
       // For now, return mock data
       return _getMockTripById(tripId);
     } catch (e) {
@@ -26,7 +28,7 @@ class TripRepository {
       // TODO: Implement real API call
       // final response = await _dioClient.get('/trips/$tripId/seats/$classId');
       // return response.data;
-      
+
       // For now, return mock seat map
       return _getMockSeatMap(tripId, classId);
     } catch (e) {
@@ -35,13 +37,17 @@ class TripRepository {
   }
 
   // Update seat selection
-  Future<bool> updateSeatSelection(String tripId, String classId, List<String> seatIds) async {
+  Future<bool> updateSeatSelection(
+    String tripId,
+    String classId,
+    List<String> seatIds,
+  ) async {
     try {
       // TODO: Implement real API call
-      // final response = await _dioClient.post('/trips/$tripId/seats/$classId/select', 
+      // final response = await _dioClient.post('/trips/$tripId/seats/$classId/select',
       //   data: {'seats': seatIds});
       // return response.data['success'] ?? false;
-      
+
       // For now, simulate success
       await Future.delayed(const Duration(milliseconds: 500));
       return true;
@@ -57,7 +63,7 @@ class TripRepository {
       // final response = await _dioClient.get('/trips/$tripId/classes');
       // final List<dynamic> data = response.data['classes'];
       // return data.map((json) => ClassOption.fromJson(json)).toList();
-      
+
       // For now, return mock classes
       return _getMockTripClasses(tripId);
     } catch (e) {
@@ -70,26 +76,29 @@ class TripRepository {
     // Extract basic info from trip ID
     final parts = tripId.split('_');
     if (parts.length < 3) return null;
-    
+
     final flightNumber = parts[0];
     final carrier = _getCarrierFromFlightNumber(flightNumber);
-    
+    final departDate = DateTime.now().add(const Duration(days: 7));
+
     return Trip(
       id: tripId,
-      carrier: carrier,
-      carrierCode: flightNumber.substring(0, 2),
-      flightNumber: flightNumber,
-      from: 'HAN',
-      to: 'SGN',
-      fromName: 'Hà Nội (HAN)',
-      toName: 'TP.HCM (SGN)',
-      departTime: '06:00',
-      arriveTime: '08:15',
-      departDate: DateTime.now().add(const Duration(days: 7)),
-      arriveDate: DateTime.now().add(const Duration(days: 7)),
-      duration: '2h 15m',
-      aircraft: 'Airbus A321',
-      classes: _getMockTripClasses(tripId),
+      carrierId: flightNumber.substring(0, 2),
+      carrierName: carrier,
+      carrierLogo: null,
+      mode: TransportMode.flight,
+      from: 'Hà Nội (HAN)',
+      fromCode: 'HAN',
+      to: 'TP.HCM (SGN)',
+      toCode: 'SGN',
+      departAt: departDate.copyWith(hour: 6, minute: 0),
+      arriveAt: departDate.copyWith(hour: 8, minute: 15),
+      duration: const Duration(hours: 2, minutes: 15),
+      basePrice: 1430000,
+      currency: 'VND',
+      stops: [],
+      classOptions: _getMockTripClasses(tripId),
+      metadata: {'aircraft': 'Airbus A321', 'flightNumber': flightNumber},
     );
   }
 
@@ -97,23 +106,36 @@ class TripRepository {
     return [
       ClassOption(
         id: 'economy',
-        name: 'Phổ thông',
+        name: 'economy',
+        displayName: 'Phổ thông',
         price: 1200000,
-        availableSeats: 45,
+        priceAddon: 0,
         amenities: ['Hành lý xách tay 7kg', 'Suất ăn nhẹ', 'Nước uống'],
-        baggage: '20kg hành lý ký gửi',
-        refundPolicy: 'Hoàn 70% phí vé trước 24h',
-        changePolicy: 'Đổi vé phí 200.000đ',
+        metadata: {
+          'availableSeats': 45,
+          'baggage': '20kg hành lý ký gửi',
+          'refundPolicy': 'Hoàn 70% phí vé trước 24h',
+          'changePolicy': 'Đổi vé phí 200.000đ',
+        },
       ),
       ClassOption(
         id: 'business',
-        name: 'Thương gia',
+        name: 'business',
+        displayName: 'Thương gia',
         price: 2500000,
-        availableSeats: 12,
-        amenities: ['Hành lý xách tay 10kg', 'Suất ăn cao cấp', 'Rượu vang', 'Ghế nằm'],
-        baggage: '30kg hành lý ký gửi',
-        refundPolicy: 'Hoàn 90% phí vé trước 2h',
-        changePolicy: 'Đổi vé miễn phí',
+        priceAddon: 1300000,
+        amenities: [
+          'Hành lý xách tay 10kg',
+          'Suất ăn cao cấp',
+          'Rượu vang',
+          'Ghế nằm',
+        ],
+        metadata: {
+          'availableSeats': 12,
+          'baggage': '30kg hành lý ký gửi',
+          'refundPolicy': 'Hoàn 90% phí vé trước 2h',
+          'changePolicy': 'Đổi vé miễn phí',
+        },
       ),
     ];
   }
@@ -133,21 +155,42 @@ class TripRepository {
         'rows': 20,
         'columns': ['A', 'B', 'C', 'D', 'E', 'F'],
         'occupied_seats': ['5A', '8F', '12C', '15B', '18E'],
-        'premium_seats': ['1A', '1B', '1C', '1D', '1E', '1F', '2A', '2B', '2C', '2D', '2E', '2F'],
+        'premium_seats': [
+          '1A',
+          '1B',
+          '1C',
+          '1D',
+          '1E',
+          '1F',
+          '2A',
+          '2B',
+          '2C',
+          '2D',
+          '2E',
+          '2F',
+        ],
         'exit_rows': [12, 13],
-        'seats': _generateSeatData(20, ['A', 'B', 'C', 'D', 'E', 'F'], ['5A', '8F', '12C', '15B', '18E']),
+        'seats': _generateSeatData(
+          20,
+          ['A', 'B', 'C', 'D', 'E', 'F'],
+          ['5A', '8F', '12C', '15B', '18E'],
+        ),
       };
     }
   }
 
-  List<Map<String, dynamic>> _generateSeatData(int rows, List<String> columns, List<String> occupiedSeats) {
+  List<Map<String, dynamic>> _generateSeatData(
+    int rows,
+    List<String> columns,
+    List<String> occupiedSeats,
+  ) {
     final seats = <Map<String, dynamic>>[];
-    
+
     for (int row = 1; row <= rows; row++) {
       for (final col in columns) {
         final seatId = '$row$col';
         final isOccupied = occupiedSeats.contains(seatId);
-        
+
         seats.add({
           'id': seatId,
           'row': row,
@@ -158,7 +201,7 @@ class TripRepository {
         });
       }
     }
-    
+
     return seats;
   }
 

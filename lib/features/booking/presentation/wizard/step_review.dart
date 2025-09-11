@@ -19,9 +19,7 @@ class StepReview extends StatelessWidget {
     final selectedSeats = bookingData['selectedSeats'] as List<String>? ?? [];
 
     if (trip == null) {
-      return const Center(
-        child: Text('Không có thông tin chuyến'),
-      );
+      return const Center(child: Text('Không có thông tin chuyến'));
     }
 
     return SingleChildScrollView(
@@ -38,10 +36,7 @@ class StepReview extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.flight_takeoff,
-                        color: AppColors.flightColor,
-                      ),
+                      Icon(Icons.flight_takeoff, color: AppColors.flightColor),
                       const SizedBox(width: 8),
                       Text(
                         'Thông tin chuyến bay',
@@ -51,9 +46,9 @@ class StepReview extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Route
                   Row(
                     children: [
@@ -74,22 +69,21 @@ class StepReview extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       Column(
                         children: [
-                          Icon(
-                            Icons.flight,
-                            color: theme.colorScheme.primary,
-                          ),
+                          Icon(Icons.flight, color: theme.colorScheme.primary),
                           Text(
                             trip['duration'],
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      
+
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -110,11 +104,11 @@ class StepReview extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 16),
-                  
+
                   // Flight details
                   Row(
                     children: [
@@ -138,9 +132,9 @@ class StepReview extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Seat selection summary
           if (selectedSeats.isNotEmpty)
             Card(
@@ -164,37 +158,41 @@ class StepReview extends StatelessWidget {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: selectedSeats.map((seat) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          seat,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      )).toList(),
+                      children: selectedSeats
+                          .map(
+                            (seat) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                seat,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Price breakdown
           Card(
             child: Padding(
@@ -204,10 +202,7 @@ class StepReview extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.receipt,
-                        color: theme.colorScheme.primary,
-                      ),
+                      Icon(Icons.receipt, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Chi tiết giá',
@@ -217,15 +212,15 @@ class StepReview extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   _buildPriceRow(theme, 'Giá vé cơ bản', '1.200.000đ'),
                   _buildPriceRow(theme, 'Phí chọn ghế', '50.000đ'),
                   _buildPriceRow(theme, 'Thuế và phí', '180.000đ'),
-                  
+
                   const Divider(height: 24),
-                  
+
                   Row(
                     children: [
                       Text(
@@ -248,9 +243,9 @@ class StepReview extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Important notes
           Card(
             child: Padding(
@@ -260,10 +255,7 @@ class StepReview extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.orange,
-                      ),
+                      Icon(Icons.info_outline, color: Colors.orange),
                       const SizedBox(width: 8),
                       Text(
                         'Lưu ý quan trọng',
@@ -273,9 +265,9 @@ class StepReview extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   _buildNoteItem(
                     theme,
                     'Vui lòng kiểm tra kỹ thông tin trước khi tiếp tục',
@@ -304,7 +296,7 @@ class StepReview extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 4),
@@ -323,10 +315,7 @@ class StepReview extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text(label, style: theme.textTheme.bodyMedium),
           const Spacer(),
           Text(
             amount,
@@ -358,7 +347,7 @@ class StepReview extends StatelessWidget {
             child: Text(
               text,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
           ),

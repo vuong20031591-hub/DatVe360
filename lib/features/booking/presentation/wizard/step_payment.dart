@@ -77,10 +77,7 @@ class _StepPaymentState extends State<StepPayment> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.receipt,
-                        color: theme.colorScheme.primary,
-                      ),
+                      Icon(Icons.receipt, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Tóm tắt thanh toán',
@@ -90,22 +87,24 @@ class _StepPaymentState extends State<StepPayment> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   _buildSummaryRow(theme, 'Giá vé', '1.200.000đ'),
                   _buildSummaryRow(theme, 'Phí chọn ghế', '50.000đ'),
                   _buildSummaryRow(theme, 'Thuế và phí', '180.000đ'),
-                  
+
                   if (_selectedPaymentMethod != null)
                     _buildSummaryRow(
                       theme,
                       'Phí thanh toán',
-                      _getPaymentFee() > 0 ? '${_formatPrice(_getPaymentFee())}đ' : 'Miễn phí',
+                      _getPaymentFee() > 0
+                          ? '${_formatPrice(_getPaymentFee())}đ'
+                          : 'Miễn phí',
                     ),
-                  
+
                   const Divider(height: 24),
-                  
+
                   Row(
                     children: [
                       Text(
@@ -128,9 +127,9 @@ class _StepPaymentState extends State<StepPayment> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Payment methods
           Card(
             child: Padding(
@@ -140,10 +139,7 @@ class _StepPaymentState extends State<StepPayment> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.payment,
-                        color: theme.colorScheme.primary,
-                      ),
+                      Icon(Icons.payment, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Chọn phương thức thanh toán',
@@ -153,20 +149,22 @@ class _StepPaymentState extends State<StepPayment> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
-                  ..._paymentMethods.map((method) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _buildPaymentMethodTile(theme, method),
-                  )).toList(),
+
+                  ..._paymentMethods.map(
+                    (method) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildPaymentMethodTile(theme, method),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Terms and conditions
           Card(
             child: Padding(
@@ -176,10 +174,7 @@ class _StepPaymentState extends State<StepPayment> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.gavel,
-                        color: theme.colorScheme.primary,
-                      ),
+                      Icon(Icons.gavel, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Điều khoản và điều kiện',
@@ -189,9 +184,9 @@ class _StepPaymentState extends State<StepPayment> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   CheckboxListTile(
                     value: _agreeToTerms,
                     onChanged: (value) {
@@ -226,13 +221,14 @@ class _StepPaymentState extends State<StepPayment> {
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -250,7 +246,9 @@ class _StepPaymentState extends State<StepPayment> {
                           '• Vui lòng kiểm tra thông tin hành khách trước khi thanh toán\n'
                           '• Chính sách hủy/đổi vé theo quy định của hãng hàng không',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.8,
+                            ),
                           ),
                         ),
                       ],
@@ -260,9 +258,9 @@ class _StepPaymentState extends State<StepPayment> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Payment button
           SizedBox(
             width: double.infinity,
@@ -284,10 +282,7 @@ class _StepPaymentState extends State<StepPayment> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text(label, style: theme.textTheme.bodyMedium),
           const Spacer(),
           Text(
             amount,
@@ -302,10 +297,12 @@ class _StepPaymentState extends State<StepPayment> {
 
   Widget _buildPaymentMethodTile(ThemeData theme, Map<String, dynamic> method) {
     final isSelected = _selectedPaymentMethod == method['id'];
-    
+
     return Card(
       elevation: isSelected ? 2 : 0,
-      color: isSelected ? theme.colorScheme.primaryContainer.withOpacity(0.3) : null,
+      color: isSelected
+          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+          : null,
       child: ListTile(
         leading: Container(
           width: 40,
@@ -314,10 +311,7 @@ class _StepPaymentState extends State<StepPayment> {
             color: method['color'].withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            method['icon'],
-            color: method['color'],
-          ),
+          child: Icon(method['icon'], color: method['color']),
         ),
         title: Text(
           method['name'],
@@ -391,7 +385,8 @@ class _StepPaymentState extends State<StepPayment> {
     await Future.delayed(const Duration(seconds: 3));
 
     // Generate booking ID
-    final bookingId = 'DV360${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+    final bookingId =
+        'DV360${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
 
     setState(() {
       _isProcessing = false;
