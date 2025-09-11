@@ -71,8 +71,8 @@ lib/
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/datve360.git
-cd datve360
+git clone https://github.com/vuong20031591-hub/DatVe360.git
+cd DatVe360
 
 # Cài đặt dependencies
 flutter pub get
@@ -117,8 +117,9 @@ Mọi người có thể contribute bằng cách:
 ## 📞 Liên hệ
 
 Nếu có câu hỏi gì về dự án, mọi người có thể liên hệ mình qua:
-- Email: your-email@example.com
-- GitHub: @your-username
+- Email: vuong20032604@gmail.com
+- Zalo: 0397707745
+- GitHub: @vuong20031591-hub
 
 ---
 
