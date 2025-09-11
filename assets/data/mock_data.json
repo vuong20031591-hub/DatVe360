@@ -1,0 +1,283 @@
+{
+  "carriers": [
+    {
+      "id": "VN",
+      "name": "Vietnam Airlines",
+      "logo": "assets/images/carriers/vietnam_airlines.png",
+      "code": "VN"
+    },
+    {
+      "id": "VJ",
+      "name": "VietJet Air",
+      "logo": "assets/images/carriers/vietjet.png",
+      "code": "VJ"
+    },
+    {
+      "id": "BL",
+      "name": "Jetstar Pacific",
+      "logo": "assets/images/carriers/jetstar.png",
+      "code": "BL"
+    },
+    {
+      "id": "QH",
+      "name": "Bamboo Airways",
+      "logo": "assets/images/carriers/bamboo.png",
+      "code": "QH"
+    }
+  ],
+  "airports": [
+    {
+      "code": "HAN",
+      "name": "Sân bay Nội Bài",
+      "city": "Hà Nội",
+      "country": "Việt Nam",
+      "timezone": "Asia/Ho_Chi_Minh"
+    },
+    {
+      "code": "SGN",
+      "name": "Sân bay Tân Sơn Nhất",
+      "city": "TP.HCM",
+      "country": "Việt Nam",
+      "timezone": "Asia/Ho_Chi_Minh"
+    },
+    {
+      "code": "DAD",
+      "name": "Sân bay Đà Nẵng",
+      "city": "Đà Nẵng",
+      "country": "Việt Nam",
+      "timezone": "Asia/Ho_Chi_Minh"
+    },
+    {
+      "code": "CXR",
+      "name": "Sân bay Cam Ranh",
+      "city": "Nha Trang",
+      "country": "Việt Nam",
+      "timezone": "Asia/Ho_Chi_Minh"
+    },
+    {
+      "code": "PQC",
+      "name": "Sân bay Phú Quốc",
+      "city": "Phú Quốc",
+      "country": "Việt Nam",
+      "timezone": "Asia/Ho_Chi_Minh"
+    }
+  ],
+  "popular_routes": [
+    {
+      "from": "HAN",
+      "to": "SGN",
+      "fromName": "Hà Nội",
+      "toName": "TP.HCM",
+      "image": "assets/images/destinations/hcm.jpg",
+      "price": 1200000
+    },
+    {
+      "from": "SGN",
+      "to": "HAN",
+      "fromName": "TP.HCM",
+      "toName": "Hà Nội",
+      "image": "assets/images/destinations/hanoi.jpg",
+      "price": 1200000
+    },
+    {
+      "from": "HAN",
+      "to": "DAD",
+      "fromName": "Hà Nội",
+      "toName": "Đà Nẵng",
+      "image": "assets/images/destinations/danang.jpg",
+      "price": 800000
+    },
+    {
+      "from": "SGN",
+      "to": "PQC",
+      "fromName": "TP.HCM",
+      "toName": "Phú Quốc",
+      "image": "assets/images/destinations/phuquoc.jpg",
+      "price": 900000
+    }
+  ],
+  "sample_trips": [
+    {
+      "id": "VN210_20241201_0600",
+      "carrier": "Vietnam Airlines",
+      "carrierCode": "VN",
+      "flightNumber": "VN210",
+      "from": "HAN",
+      "to": "SGN",
+      "fromName": "Hà Nội (HAN)",
+      "toName": "TP.HCM (SGN)",
+      "departTime": "06:00",
+      "arriveTime": "08:15",
+      "departDate": "2024-12-01",
+      "arriveDate": "2024-12-01",
+      "duration": "2h 15m",
+      "aircraft": "Airbus A321",
+      "classes": [
+        {
+          "id": "economy",
+          "name": "Phổ thông",
+          "price": 1200000,
+          "availableSeats": 45,
+          "amenities": ["Hành lý xách tay 7kg", "Suất ăn nhẹ", "Nước uống"],
+          "baggage": "20kg hành lý ký gửi",
+          "refundPolicy": "Hoàn 70% phí vé trước 24h",
+          "changePolicy": "Đổi vé phí 200.000đ"
+        },
+        {
+          "id": "business",
+          "name": "Thương gia",
+          "price": 2500000,
+          "availableSeats": 12,
+          "amenities": ["Hành lý xách tay 10kg", "Suất ăn cao cấp", "Rượu vang", "Ghế nằm"],
+          "baggage": "30kg hành lý ký gửi",
+          "refundPolicy": "Hoàn 90% phí vé trước 2h",
+          "changePolicy": "Đổi vé miễn phí"
+        }
+      ]
+    },
+    {
+      "id": "VJ150_20241201_0730",
+      "carrier": "VietJet Air",
+      "carrierCode": "VJ",
+      "flightNumber": "VJ150",
+      "from": "HAN",
+      "to": "SGN",
+      "fromName": "Hà Nội (HAN)",
+      "toName": "TP.HCM (SGN)",
+      "departTime": "07:30",
+      "arriveTime": "09:45",
+      "departDate": "2024-12-01",
+      "arriveDate": "2024-12-01",
+      "duration": "2h 15m",
+      "aircraft": "Airbus A320",
+      "classes": [
+        {
+          "id": "economy",
+          "name": "Eco",
+          "price": 999000,
+          "availableSeats": 38,
+          "amenities": ["Hành lý xách tay 7kg"],
+          "baggage": "Không bao gồm",
+          "refundPolicy": "Không hoàn vé",
+          "changePolicy": "Đổi vé phí 300.000đ"
+        },
+        {
+          "id": "skyboss",
+          "name": "SkyBoss",
+          "price": 1899000,
+          "availableSeats": 8,
+          "amenities": ["Hành lý xách tay 10kg", "Suất ăn", "Chọn ghế miễn phí"],
+          "baggage": "20kg hành lý ký gửi",
+          "refundPolicy": "Hoàn 50% phí vé trước 24h",
+          "changePolicy": "Đổi vé phí 150.000đ"
+        }
+      ]
+    },
+    {
+      "id": "BL550_20241201_1200",
+      "carrier": "Jetstar Pacific",
+      "carrierCode": "BL",
+      "flightNumber": "BL550",
+      "from": "HAN",
+      "to": "SGN",
+      "fromName": "Hà Nội (HAN)",
+      "toName": "TP.HCM (SGN)",
+      "departTime": "12:00",
+      "arriveTime": "14:15",
+      "departDate": "2024-12-01",
+      "arriveDate": "2024-12-01",
+      "duration": "2h 15m",
+      "aircraft": "Airbus A320",
+      "classes": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "price": 899000,
+          "availableSeats": 42,
+          "amenities": ["Hành lý xách tay 7kg"],
+          "baggage": "Không bao gồm",
+          "refundPolicy": "Không hoàn vé",
+          "changePolicy": "Đổi vé phí 400.000đ"
+        },
+        {
+          "id": "plus",
+          "name": "Plus",
+          "price": 1599000,
+          "availableSeats": 15,
+          "amenities": ["Hành lý xách tay 10kg", "Chọn ghế", "Suất ăn nhẹ"],
+          "baggage": "20kg hành lý ký gửi",
+          "refundPolicy": "Hoàn 30% phí vé trước 24h",
+          "changePolicy": "Đổi vé phí 200.000đ"
+        }
+      ]
+    }
+  ],
+  "seat_maps": {
+    "VN210_economy": {
+      "rows": 20,
+      "columns": ["A", "B", "C", "D", "E", "F"],
+      "occupied_seats": ["5A", "8F", "12C", "15B", "18E"],
+      "premium_seats": ["1A", "1B", "1C", "1D", "1E", "1F", "2A", "2B", "2C", "2D", "2E", "2F"],
+      "exit_rows": [12, 13]
+    },
+    "VN210_business": {
+      "rows": 3,
+      "columns": ["A", "B", "C", "D"],
+      "occupied_seats": ["2B", "3A"],
+      "premium_seats": [],
+      "exit_rows": []
+    }
+  },
+  "payment_methods": [
+    {
+      "id": "vnpay",
+      "name": "VNPay",
+      "description": "Thanh toán qua VNPay",
+      "icon": "vnpay",
+      "fee": 0,
+      "enabled": true
+    },
+    {
+      "id": "momo",
+      "name": "MoMo",
+      "description": "Ví điện tử MoMo",
+      "icon": "momo",
+      "fee": 0,
+      "enabled": true
+    },
+    {
+      "id": "banking",
+      "name": "Internet Banking",
+      "description": "Chuyển khoản ngân hàng",
+      "icon": "banking",
+      "fee": 0,
+      "enabled": true
+    },
+    {
+      "id": "visa",
+      "name": "Thẻ Visa/MasterCard",
+      "description": "Thanh toán bằng thẻ quốc tế",
+      "icon": "visa",
+      "fee": 15000,
+      "enabled": true
+    }
+  ],
+  "notifications": [
+    {
+      "id": "1",
+      "title": "Chào mừng đến với DatVe360!",
+      "message": "Khám phá những ưu đãi tuyệt vời cho chuyến đi của bạn.",
+      "type": "welcome",
+      "timestamp": "2024-11-20T10:00:00Z",
+      "read": false
+    },
+    {
+      "id": "2",
+      "title": "Giảm giá 20% cho vé máy bay",
+      "message": "Áp dụng cho tất cả các chuyến bay nội địa. Mã: SAVE20",
+      "type": "promotion",
+      "timestamp": "2024-11-19T15:30:00Z",
+      "read": false
+    }
+  ]
+}
