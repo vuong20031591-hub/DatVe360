@@ -6,11 +6,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
 class SearchCard extends ConsumerStatefulWidget {
-  const SearchCard({
-    super.key,
-    required this.mode,
-    required this.onSearch,
-  });
+  const SearchCard({super.key, required this.mode, required this.onSearch});
 
   final TransportMode mode;
   final Function(Map<String, dynamic>) onSearch;
@@ -23,7 +19,7 @@ class _SearchCardState extends ConsumerState<SearchCard> {
   final _formKey = GlobalKey<FormState>();
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
-  
+
   DateTime? _departDate;
   DateTime? _returnDate;
   bool _isRoundTrip = false;
@@ -36,6 +32,33 @@ class _SearchCardState extends ConsumerState<SearchCard> {
     _fromController.dispose();
     _toController.dispose();
     super.dispose();
+  }
+
+  // Get appropriate icons based on transport mode
+  IconData get _fromIcon {
+    switch (widget.mode) {
+      case TransportMode.flight:
+        return Icons.flight_takeoff;
+      case TransportMode.train:
+        return Icons.train;
+      case TransportMode.bus:
+        return Icons.directions_bus;
+      case TransportMode.ferry:
+        return Icons.directions_boat;
+    }
+  }
+
+  IconData get _toIcon {
+    switch (widget.mode) {
+      case TransportMode.flight:
+        return Icons.flight_land;
+      case TransportMode.train:
+        return Icons.train;
+      case TransportMode.bus:
+        return Icons.directions_bus;
+      case TransportMode.ferry:
+        return Icons.directions_boat;
+    }
   }
 
   @override
@@ -88,9 +111,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // From and To fields
               Row(
                 children: [
@@ -98,7 +121,7 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                     child: AppTextField(
                       controller: _fromController,
                       label: l10n.from,
-                      prefixIcon: Icons.flight_takeoff,
+                      prefixIcon: _fromIcon,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return l10n.fieldRequired;
@@ -112,9 +135,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                       readOnly: true,
                     ),
                   ),
-                  
+
                   const SizedBox(width: 8),
-                  
+
                   // Swap button
                   IconButton(
                     onPressed: _swapLocations,
@@ -123,14 +146,14 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                       backgroundColor: theme.colorScheme.primaryContainer,
                     ),
                   ),
-                  
+
                   const SizedBox(width: 8),
-                  
+
                   Expanded(
                     child: AppTextField(
                       controller: _toController,
                       label: l10n.to,
-                      prefixIcon: Icons.flight_land,
+                      prefixIcon: _toIcon,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return l10n.fieldRequired;
@@ -146,9 +169,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Date fields
               Row(
                 children: [
@@ -160,9 +183,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                       icon: Icons.calendar_today,
                     ),
                   ),
-                  
+
                   const SizedBox(width: 16),
-                  
+
                   Expanded(
                     child: _buildDateField(
                       label: l10n.returnDate,
@@ -174,9 +197,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Passengers field
               InkWell(
                 onTap: _showPassengerPicker,
@@ -203,7 +226,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                             Text(
                               l10n.passengers,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.6,
+                                ),
                               ),
                             ),
                             Text(
@@ -221,9 +246,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Passenger hint
               Text(
                 'Đi cùng trẻ em? Chọn đúng số lượng để áp dụng chính sách giá phù hợp.',
@@ -231,9 +256,9 @@ class _SearchCardState extends ConsumerState<SearchCard> {
                   color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Search button
               SizedBox(
                 width: double.infinity,
@@ -258,7 +283,7 @@ class _SearchCardState extends ConsumerState<SearchCard> {
     bool enabled = true,
   }) {
     final theme = Theme.of(context);
-    
+
     return InkWell(
       onTap: enabled ? onTap : null,
       child: Container(
@@ -343,16 +368,18 @@ class _SearchCardState extends ConsumerState<SearchCard> {
   void _selectDate(bool isDeparture) async {
     final now = DateTime.now();
     final firstDate = isDeparture ? now : (_departDate ?? now);
-    
+
     final date = await showDatePicker(
       context: context,
       initialDate: isDeparture
           ? (_departDate ?? now.add(const Duration(days: 1)))
-          : (_returnDate ?? (_departDate?.add(const Duration(days: 1)) ?? now.add(const Duration(days: 2)))),
+          : (_returnDate ??
+                (_departDate?.add(const Duration(days: 1)) ??
+                    now.add(const Duration(days: 2)))),
       firstDate: firstDate,
       lastDate: now.add(const Duration(days: 365)),
     );
-    
+
     if (date != null) {
       setState(() {
         if (isDeparture) {
@@ -387,21 +414,21 @@ class _SearchCardState extends ConsumerState<SearchCard> {
 
   void _handleSearch() {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_departDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày đi')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày đi')));
       return;
     }
-    
+
     if (_isRoundTrip && _returnDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày về')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày về')));
       return;
     }
-    
+
     final searchData = {
       'mode': widget.mode,
       'from': _fromController.text,
@@ -413,7 +440,7 @@ class _SearchCardState extends ConsumerState<SearchCard> {
       'children': _children,
       'infants': _infants,
     };
-    
+
     widget.onSearch(searchData);
   }
 }

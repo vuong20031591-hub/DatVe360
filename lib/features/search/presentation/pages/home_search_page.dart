@@ -107,6 +107,16 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
                   const SizedBox(height: 32),
 
+                  // Special offers
+                  _buildSpecialOffers(context),
+
+                  const SizedBox(height: 32),
+
+                  // Featured services
+                  _buildFeaturedServices(context),
+
+                  const SizedBox(height: 32),
+
                   // Recent searches
                   _buildRecentSearches(context),
                 ],
@@ -151,22 +161,47 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  _getModeColor(_selectedMode).withOpacity(0.7),
-                                  _getModeColor(_selectedMode),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
+                              image: destination['image'] != null
+                                  ? DecorationImage(
+                                      image: NetworkImage(
+                                        destination['image']!,
+                                      ),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                              gradient: destination['image'] == null
+                                  ? LinearGradient(
+                                      colors: [
+                                        _getModeColor(
+                                          _selectedMode,
+                                        ).withValues(alpha: 0.7),
+                                        _getModeColor(_selectedMode),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
                             ),
-                            child: Center(
-                              child: Icon(
-                                _getModeIcon(_selectedMode),
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                            ),
+                            child: destination['image'] != null
+                                ? Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.3),
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Icon(
+                                      _getModeIcon(_selectedMode),
+                                      color: Colors.white,
+                                      size: 32,
+                                    ),
+                                  ),
                           ),
                         ),
                         Padding(
@@ -197,6 +232,162 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
               );
             },
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecialOffers(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ưu đãi đặc biệt',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 120,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.primary.withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -20,
+                top: -20,
+                child: Icon(
+                  Icons.local_offer,
+                  size: 100,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Giảm 20% cho chuyến đi đầu tiên',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sử dụng mã: DATVE360',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedServices(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final services = [
+      {
+        'title': 'Đặt vé nhanh',
+        'subtitle': 'Chỉ 3 bước đơn giản',
+        'icon': Icons.flash_on,
+        'color': Colors.orange,
+      },
+      {
+        'title': 'Hỗ trợ 24/7',
+        'subtitle': 'Luôn sẵn sàng hỗ trợ',
+        'icon': Icons.support_agent,
+        'color': Colors.green,
+      },
+      {
+        'title': 'Thanh toán an toàn',
+        'subtitle': 'Bảo mật tuyệt đối',
+        'icon': Icons.security,
+        'color': Colors.blue,
+      },
+      {
+        'title': 'Hoàn tiền dễ dàng',
+        'subtitle': 'Chính sách linh hoạt',
+        'icon': Icons.money_off,
+        'color': Colors.purple,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dịch vụ nổi bật',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.5,
+          ),
+          itemCount: services.length,
+          itemBuilder: (context, index) {
+            final service = services[index];
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      service['icon'] as IconData,
+                      color: service['color'] as Color,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      service['title'] as String,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      service['subtitle'] as String,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -264,10 +455,30 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     switch (_selectedMode) {
       case TransportMode.flight:
         return [
-          {'name': 'Hồ Chí Minh', 'price': '1.200.000đ'},
-          {'name': 'Đà Nẵng', 'price': '800.000đ'},
-          {'name': 'Nha Trang', 'price': '900.000đ'},
-          {'name': 'Phú Quốc', 'price': '1.500.000đ'},
+          {
+            'name': 'Hồ Chí Minh',
+            'price': '1.200.000đ',
+            'image':
+                'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&h=300&fit=crop',
+          },
+          {
+            'name': 'Đà Nẵng',
+            'price': '800.000đ',
+            'image':
+                'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
+          },
+          {
+            'name': 'Nha Trang',
+            'price': '900.000đ',
+            'image':
+                'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?w=400&h=300&fit=crop',
+          },
+          {
+            'name': 'Phú Quốc',
+            'price': '1.500.000đ',
+            'image':
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+          },
         ];
       case TransportMode.train:
         return [
