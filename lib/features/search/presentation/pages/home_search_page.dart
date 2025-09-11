@@ -6,6 +6,7 @@ import '../../../../core/i18n/l10n.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../widgets/search_card.dart';
 import '../widgets/transport_mode_tabs.dart';
+import '../widgets/destination_card.dart';
 
 class HomeSearchPage extends ConsumerStatefulWidget {
   const HomeSearchPage({super.key});
@@ -146,99 +147,17 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
           child: SizedBox(
             key: ValueKey(_selectedMode),
             height: 120,
-            child: ListView.builder(
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _getPopularDestinations().length,
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final destination = _getPopularDestinations()[index];
-                return Container(
-                  width: 160,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Hero(
-                    tag:
-                        'destination_${destination['name']}_${_selectedMode.name}',
-                    child: Card(
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => _selectDestination(destination),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  image: destination['image'] != null
-                                      ? DecorationImage(
-                                          image: NetworkImage(
-                                            destination['image']!,
-                                          ),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
-                                  gradient: destination['image'] == null
-                                      ? LinearGradient(
-                                          colors: [
-                                            _getModeColor(
-                                              _selectedMode,
-                                            ).withValues(alpha: 0.7),
-                                            _getModeColor(_selectedMode),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        )
-                                      : null,
-                                ),
-                                child: destination['image'] != null
-                                    ? Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black.withValues(
-                                                alpha: 0.3,
-                                              ),
-                                            ],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                          ),
-                                        ),
-                                      )
-                                    : Center(
-                                        child: Icon(
-                                          _getModeIcon(_selectedMode),
-                                          color: Colors.white,
-                                          size: 32,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    destination['name'] ?? 'Unknown',
-                                    style: theme.textTheme.titleSmall,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    'Từ ${destination['price']}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: AppColors.lightSuccess,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                return DestinationCard(
+                  destination: destination,
+                  mode: _selectedMode,
+                  onTap: () => _selectDestination(destination),
                 );
               },
             ),
