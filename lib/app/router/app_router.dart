@@ -16,6 +16,9 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/support/presentation/pages/faq_page.dart';
 import '../../features/support/presentation/pages/contact_support_page.dart';
 import '../../features/support/presentation/pages/terms_policy_page.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/auth/presentation/pages/forgot_password_page.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -136,6 +139,25 @@ class AppRouter {
         path: '/terms-policy',
         name: 'termsPolicy',
         builder: (context, state) => const TermsPolicyPage(),
+      ),
+
+      // Authentication routes
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginPage(),
+      ),
+
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterPage(),
+      ),
+
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgotPassword',
+        builder: (context, state) => const ForgotPasswordPage(),
       ),
     ],
     errorBuilder: (context, state) => AppErrorPage(error: state.error),

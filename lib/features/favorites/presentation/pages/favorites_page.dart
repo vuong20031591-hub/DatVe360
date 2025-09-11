@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/i18n/l10n.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
 
 class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});
@@ -172,7 +174,11 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  Widget _buildTripCard(BuildContext context, ThemeData theme, Map<String, dynamic> trip) {
+  Widget _buildTripCard(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, dynamic> trip,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -204,7 +210,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                         Text(
                           trip['airline'] ?? trip['operator'],
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ],
@@ -242,7 +250,11 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  Widget _buildDestinationCard(BuildContext context, ThemeData theme, Map<String, dynamic> destination) {
+  Widget _buildDestinationCard(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, dynamic> destination,
+  ) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -251,29 +263,46 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(destination['image']),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
+              child: CachedNetworkImage(
+                imageUrl: destination['image'],
+                fit: BoxFit.cover,
+                memCacheWidth: 400,
+                memCacheHeight: 300,
+                placeholder: (context, url) => const ShimmerCard(),
+                errorWidget: (context, url, error) => Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.3),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                      colors: [Colors.grey[400]!, Colors.grey[600]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      onPressed: () => _removeFavorite(destination),
-                      icon: const Icon(Icons.favorite, color: Colors.red),
+                  child: const Icon(Icons.error, color: Colors.white),
+                ),
+                imageBuilder: (context, imageProvider) => Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: imageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.3),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        onPressed: () => _removeFavorite(destination),
+                        icon: const Icon(Icons.favorite, color: Colors.red),
+                      ),
                     ),
                   ),
                 ),
@@ -309,7 +338,11 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  Widget _buildRouteCard(BuildContext context, ThemeData theme, Map<String, dynamic> route) {
+  Widget _buildRouteCard(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, dynamic> route,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -338,7 +371,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                     Text(
                       'Tìm kiếm ${route['searchCount']} lần',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -382,12 +417,14 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       {
         'name': 'Phú Quốc',
         'price': '1.500.000đ',
-        'image': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+        'image':
+            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
       },
       {
         'name': 'Đà Nẵng',
         'price': '800.000đ',
-        'image': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
+        'image':
+            'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
       },
     ];
   }
@@ -400,12 +437,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         'mode': 'flight',
         'searchCount': 5,
       },
-      {
-        'from': 'Hà Nội',
-        'to': 'Đà Nẵng',
-        'mode': 'train',
-        'searchCount': 3,
-      },
+      {'from': 'Hà Nội', 'to': 'Đà Nẵng', 'mode': 'train', 'searchCount': 3},
     ];
   }
 

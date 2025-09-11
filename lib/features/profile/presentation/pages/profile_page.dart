@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../auth/domain/providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -9,6 +10,7 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -40,17 +42,21 @@ class ProfilePage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Khách hàng',
+                            authState.isAuthenticated
+                                ? authState.user!.fullName
+                                : 'Khách hàng',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Chưa đăng nhập',
+                            authState.isAuthenticated
+                                ? authState.user!.email
+                                : 'Chưa đăng nhập',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.7,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
                               ),
                             ),
                           ),
@@ -59,16 +65,15 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        // TODO: Implement login
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Tính năng đăng nhập sẽ được cập nhật sau',
-                            ),
-                          ),
-                        );
+                        if (authState.isAuthenticated) {
+                          _showLogoutDialog(context, ref);
+                        } else {
+                          context.push('/login');
+                        }
                       },
-                      child: const Text('Đăng nhập'),
+                      child: Text(
+                        authState.isAuthenticated ? 'Đăng xuất' : 'Đăng nhập',
+                      ),
                     ),
                   ],
                 ),
@@ -382,4 +387,27 @@ class _MenuItem {
     this.subtitle,
     required this.onTap,
   });
+}
+
+void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Đăng xuất'),
+      content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ref.read(authProvider.notifier).logout();
+          },
+          child: const Text('Đăng xuất'),
+        ),
+      ],
+    ),
+  );
 }
