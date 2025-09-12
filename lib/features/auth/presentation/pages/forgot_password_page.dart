@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../data/models/auth_state.dart';
 import '../../domain/providers/auth_provider.dart';
 import '../widgets/auth_form_field.dart';
@@ -30,6 +31,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
       body: Container(
@@ -57,7 +60,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   const SizedBox(height: 32),
                   _buildIllustration(theme),
                   const SizedBox(height: 32),
-                  _buildHeader(theme),
+                  _buildHeader(theme, localizations),
                   const SizedBox(height: 32),
                   if (!_isEmailSent) ...[
                     _buildFormContainer(theme, authState),
@@ -90,10 +93,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       ),
       child: IconButton(
         onPressed: () => context.pop(),
-        icon: Icon(
-          Icons.arrow_back,
-          color: theme.colorScheme.onSurface,
-        ),
+        icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
       ),
     );
   }
@@ -108,10 +108,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.tertiary,
-              theme.colorScheme.primary,
-            ],
+            colors: [theme.colorScheme.tertiary, theme.colorScheme.primary],
           ),
           boxShadow: [
             BoxShadow(
@@ -121,21 +118,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             ),
           ],
         ),
-        child: Icon(
-          Icons.lock_reset,
-          size: 60,
-          color: Colors.white,
-        ),
+        child: Icon(Icons.lock_reset, size: 60, color: Colors.white),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quên mật khẩu?',
+          localizations.resetPassword,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
@@ -143,9 +136,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          _isEmailSent 
-            ? 'Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến email của bạn'
-            : 'Nhập email của bạn để nhận hướng dẫn đặt lại mật khẩu',
+          _isEmailSent
+              ? localizations.checkEmailForInstructions
+              : localizations.enterEmailToReset,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
           ),
@@ -185,7 +178,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               if (value == null || value.isEmpty) {
                 return 'Vui lòng nhập email';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Email không hợp lệ';
               }
               return null;
@@ -314,10 +309,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       setState(() {
         _isEmailSent = true;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Hướng dẫn đặt lại mật khẩu đã được gửi đến ${_emailController.text}'),
+          content: Text(
+            'Hướng dẫn đặt lại mật khẩu đã được gửi đến ${_emailController.text}',
+          ),
           backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );

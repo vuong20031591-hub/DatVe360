@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/i18n/l10n.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 
 class ContactSupportPage extends ConsumerStatefulWidget {
@@ -19,7 +19,7 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
   final _phoneController = TextEditingController();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  
+
   String _selectedCategory = 'general';
   bool _isSubmitting = false;
 
@@ -36,11 +36,11 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Liên hệ hỗ trợ'),
-      ),
+      appBar: AppBar(title: Text(localizations.contactSupport)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
@@ -211,12 +211,30 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'general', child: Text('Câu hỏi chung')),
-                  DropdownMenuItem(value: 'booking', child: Text('Vấn đề đặt vé')),
-                  DropdownMenuItem(value: 'payment', child: Text('Vấn đề thanh toán')),
-                  DropdownMenuItem(value: 'cancellation', child: Text('Hủy/Hoàn vé')),
-                  DropdownMenuItem(value: 'technical', child: Text('Lỗi kỹ thuật')),
-                  DropdownMenuItem(value: 'feedback', child: Text('Góp ý/Phản hồi')),
+                  DropdownMenuItem(
+                    value: 'general',
+                    child: Text('Câu hỏi chung'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'booking',
+                    child: Text('Vấn đề đặt vé'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'payment',
+                    child: Text('Vấn đề thanh toán'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'cancellation',
+                    child: Text('Hủy/Hoàn vé'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'technical',
+                    child: Text('Lỗi kỹ thuật'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'feedback',
+                    child: Text('Góp ý/Phản hồi'),
+                  ),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -225,7 +243,7 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Name field
               TextFormField(
                 controller: _nameController,
@@ -241,7 +259,7 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Email field
               TextFormField(
                 controller: _emailController,
@@ -254,14 +272,16 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                   if (value == null || value.isEmpty) {
                     return 'Vui lòng nhập email';
                   }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
                     return 'Email không hợp lệ';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Phone field
               TextFormField(
                 controller: _phoneController,
@@ -272,7 +292,7 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Subject field
               TextFormField(
                 controller: _subjectController,
@@ -288,7 +308,7 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Message field
               TextFormField(
                 controller: _messageController,
@@ -309,7 +329,7 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
                 },
               ),
               const SizedBox(height: 24),
-              
+
               // Submit button
               SizedBox(
                 width: double.infinity,
@@ -329,36 +349,28 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
   void _callHotline() {
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang kết nối đến hotline 1900-xxxx...'),
-      ),
+      const SnackBar(content: Text('Đang kết nối đến hotline 1900-xxxx...')),
     );
   }
 
   void _openLiveChat() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở chat trực tuyến...'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đang mở chat trực tuyến...')));
   }
 
   void _sendEmail() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở ứng dụng email...'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đang mở ứng dụng email...')));
   }
 
   void _openFacebook() {
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở Facebook Messenger...'),
-      ),
+      const SnackBar(content: Text('Đang mở Facebook Messenger...')),
     );
   }
 
@@ -381,7 +393,9 @@ class _ContactSupportPageState extends ConsumerState<ContactSupportPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Yêu cầu hỗ trợ đã được gửi thành công! Chúng tôi sẽ phản hồi trong vòng 24 giờ.'),
+          content: Text(
+            'Yêu cầu hỗ trợ đã được gửi thành công! Chúng tôi sẽ phản hồi trong vòng 24 giờ.',
+          ),
           duration: Duration(seconds: 4),
         ),
       );

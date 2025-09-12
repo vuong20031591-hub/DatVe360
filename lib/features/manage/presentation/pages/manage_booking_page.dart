@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../widgets/booking_card.dart';
@@ -31,9 +32,17 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quản lý đặt vé')),
+      appBar: AppBar(
+        title: Text(
+          localizations.locale.languageCode == 'vi'
+              ? 'Quản lý đặt vé'
+              : 'Manage Bookings',
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(

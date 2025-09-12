@@ -21,6 +21,16 @@ class AppConstants {
   // Hive boxes
   static const String bookingsBox = 'bookings';
   static const String ticketsBox = 'tickets';
+  static const String cacheBox = 'cache';
+  static const String searchCacheBox = 'search_cache';
+  static const String destinationsCacheBox = 'destinations_cache';
+  static const String airportsCacheBox = 'airports_cache';
+
+  // Cache settings
+  static const Duration searchCacheExpiry = Duration(hours: 2);
+  static const Duration destinationsCacheExpiry = Duration(days: 7);
+  static const Duration airportsCacheExpiry = Duration(days: 30);
+  static const int maxCacheSize = 100; // Maximum cached items per type
 
   // Pagination
   static const int defaultPageSize = 20;

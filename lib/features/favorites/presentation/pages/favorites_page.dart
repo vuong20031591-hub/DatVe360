@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/i18n/l10n.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 
@@ -33,16 +33,26 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Yêu thích'),
+        title: Text(localizations.favorites),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Chuyến đi', icon: Icon(Icons.flight)),
-            Tab(text: 'Điểm đến', icon: Icon(Icons.location_on)),
-            Tab(text: 'Tuyến đường', icon: Icon(Icons.route)),
+          tabs: [
+            Tab(text: localizations.trips, icon: Icon(Icons.flight)),
+            Tab(
+              text: localizations.destinations,
+              icon: Icon(Icons.location_on),
+            ),
+            Tab(
+              text: localizations.locale.languageCode == 'vi'
+                  ? 'Tuyến đường'
+                  : 'Routes',
+              icon: Icon(Icons.route),
+            ),
           ],
         ),
       ),

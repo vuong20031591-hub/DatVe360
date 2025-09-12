@@ -7,8 +7,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app/router/app_router.dart';
 import 'core/providers/app_providers.dart';
+import 'core/providers/theme_provider.dart' as theme_providers;
+import 'core/providers/locale_provider.dart' as locale_providers;
+import 'core/services/settings_service.dart';
+import 'core/services/cache_service.dart';
+import 'core/services/connectivity_service.dart';
 import 'core/constants/app_constants.dart';
-import 'core/i18n/l10n.dart';
+import 'core/i18n/l10n.dart' as app_l10n;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,10 +35,25 @@ void main() async {
   // Initialize SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
 
+  // Initialize Settings Service
+  final settingsService = SettingsService();
+  await settingsService.init();
+
+  // Initialize Cache Service
+  final cacheService = CacheService.instance;
+  await cacheService.init();
+
+  // Initialize Connectivity Service
+  final connectivityService = ConnectivityService.instance;
+  await connectivityService.init();
+
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        theme_providers.settingsServiceProvider.overrideWithValue(
+          settingsService,
+        ),
       ],
       child: const DatVe360App(),
     ),
@@ -45,35 +65,28 @@ class DatVe360App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    final locale = ref.watch(localeProvider);
+    final themeMode = ref.watch(theme_providers.themeProvider);
+    final locale = ref.watch(locale_providers.localeProvider);
+    final lightTheme = ref.watch(theme_providers.lightThemeProvider);
+    final darkTheme = ref.watch(theme_providers.darkThemeProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
 
       // Theme
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6366F1)),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF818CF8),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: lightTheme,
+      darkTheme: darkTheme,
       themeMode: themeMode,
 
       // Localization
-      locale: Locale(locale),
+      locale: locale,
       supportedLocales: const [
-        Locale('vi', ''), // Vietnamese
-        Locale('en', ''), // English
+        Locale('vi', 'VN'), // Vietnamese
+        Locale('en', 'US'), // English
       ],
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
+      localizationsDelegates: [
+        app_l10n.AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

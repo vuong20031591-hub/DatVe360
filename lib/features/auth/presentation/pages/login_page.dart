@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../data/models/user.dart';
 import '../../data/models/auth_state.dart';
 import '../../domain/providers/auth_provider.dart';
@@ -37,6 +38,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
     final formValidation = ref.watch(loginFormProvider);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     // Listen to auth state changes
     ref.listen<AuthState>(authProvider, (previous, next) {
@@ -76,9 +79,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   const SizedBox(height: 20),
                   _buildIllustration(theme),
                   const SizedBox(height: 32),
-                  _buildHeader(theme),
+                  _buildHeader(theme, localizations),
                   const SizedBox(height: 32),
-                  _buildFormContainer(theme, formValidation, authState),
+                  _buildFormContainer(
+                    theme,
+                    formValidation,
+                    authState,
+                    localizations,
+                  ),
                   const SizedBox(height: 24),
                   _buildDivider(theme),
                   const SizedBox(height: 24),
@@ -119,12 +127,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Chào mừng trở lại!',
+          localizations.welcomeBack,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
@@ -132,7 +140,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Đăng nhập để tiếp tục sử dụng DatVe360',
+          localizations.loginToContinue,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
           ),
@@ -145,6 +153,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ThemeData theme,
     FormValidationState formValidation,
     AuthState authState,
+    AppLocalizations localizations,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -165,22 +174,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          _buildLoginForm(formValidation),
+          _buildLoginForm(formValidation, localizations),
           const SizedBox(height: 24),
-          _buildRememberMeAndForgotPassword(theme),
+          _buildRememberMeAndForgotPassword(theme, localizations),
           const SizedBox(height: 24),
-          _buildLoginButton(authState),
+          _buildLoginButton(authState, localizations),
         ],
       ),
     );
   }
 
-  Widget _buildLoginForm(FormValidationState formValidation) {
+  Widget _buildLoginForm(
+    FormValidationState formValidation,
+    AppLocalizations localizations,
+  ) {
     return Column(
       children: [
         AuthFormField(
-          label: 'Email hoặc số điện thoại',
-          hintText: 'Nhập email hoặc số điện thoại',
+          label: localizations.email,
+          hintText: localizations.locale.languageCode == 'vi'
+              ? 'Nhập email hoặc số điện thoại'
+              : 'Enter email or phone number',
           controller: _emailController,
           focusNode: _emailFocusNode,
           keyboardType: TextInputType.emailAddress,
@@ -195,8 +209,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
         const SizedBox(height: 20),
         AuthFormField(
-          label: 'Mật khẩu',
-          hintText: 'Nhập mật khẩu',
+          label: localizations.password,
+          hintText: localizations.locale.languageCode == 'vi'
+              ? 'Nhập mật khẩu'
+              : 'Enter password',
           controller: _passwordController,
           focusNode: _passwordFocusNode,
           obscureText: true,
@@ -213,7 +229,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildRememberMeAndForgotPassword(ThemeData theme) {
+  Widget _buildRememberMeAndForgotPassword(
+    ThemeData theme,
+    AppLocalizations localizations,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -224,20 +243,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 _rememberMe = value ?? false;
               });
             },
-            title: Text('Ghi nhớ đăng nhập', style: theme.textTheme.bodyMedium),
+            title: Text(
+              localizations.rememberMe,
+              style: theme.textTheme.bodyMedium,
+            ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
           ),
         ),
-        LinkButton(text: 'Quên mật khẩu?', onPressed: _handleForgotPassword),
+        LinkButton(
+          text: localizations.forgotPassword,
+          onPressed: _handleForgotPassword,
+        ),
       ],
     );
   }
 
-  Widget _buildLoginButton(AuthState authState) {
+  Widget _buildLoginButton(
+    AuthState authState,
+    AppLocalizations localizations,
+  ) {
     return AuthButton.primary(
-      text: 'Đăng nhập',
+      text: localizations.login,
       isLoading: authState.isLoading,
       onPressed: _handleLogin,
     );

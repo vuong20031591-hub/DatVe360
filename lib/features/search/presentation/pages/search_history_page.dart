@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/i18n/l10n.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../results/data/models/trip.dart';
 
@@ -17,16 +17,17 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lịch sử tìm kiếm'),
+        title: Text(localizations.searchHistory),
         actions: [
           IconButton(
             onPressed: _clearAllHistory,
             icon: const Icon(Icons.delete_sweep),
-            tooltip: 'Xóa tất cả',
+            tooltip: localizations.clearAll,
           ),
         ],
       ),
@@ -45,7 +46,7 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
       children: [
         // Filter tabs
         _buildFilterTabs(context, theme),
-        
+
         // Search history list
         Expanded(
           child: ListView.builder(
@@ -62,6 +63,9 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
   }
 
   Widget _buildEmptyState(BuildContext context, ThemeData theme) {
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -73,14 +77,14 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Chưa có lịch sử tìm kiếm',
+            localizations.noSearchHistory,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Các tìm kiếm của bạn sẽ xuất hiện ở đây',
+            localizations.searchHistoryDesc,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
@@ -89,7 +93,7 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
           const SizedBox(height: 24),
           AppButton(
             onPressed: () => Navigator.of(context).pop(),
-            text: 'Bắt đầu tìm kiếm',
+            text: localizations.startSearching,
             icon: Icons.search,
           ),
         ],
@@ -126,7 +130,11 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
     );
   }
 
-  Widget _buildSearchHistoryItem(BuildContext context, ThemeData theme, Map<String, dynamic> search) {
+  Widget _buildSearchHistoryItem(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, dynamic> search,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -156,7 +164,10 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
                   IconButton(
                     onPressed: () => _removeSearchHistory(search),
                     icon: const Icon(Icons.close, size: 18),
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                   ),
                 ],
               ),
@@ -293,7 +304,9 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa tất cả lịch sử'),
-        content: const Text('Bạn có chắc chắn muốn xóa tất cả lịch sử tìm kiếm?'),
+        content: const Text(
+          'Bạn có chắc chắn muốn xóa tất cả lịch sử tìm kiếm?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

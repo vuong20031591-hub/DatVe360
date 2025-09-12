@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -11,10 +12,12 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tài khoản'),
+        title: Text(localizations.profile),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -44,7 +47,7 @@ class ProfilePage extends ConsumerWidget {
                           Text(
                             authState.isAuthenticated
                                 ? authState.user!.fullName
-                                : 'Khách hàng',
+                                : localizations.guest,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -83,78 +86,62 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Menu sections
-            _buildMenuSection(context, 'Đặt vé & Quản lý', [
+            _buildMenuSection(context, localizations.bookingAndManagement, [
               _MenuItem(
                 icon: Icons.history,
-                title: 'Lịch sử tìm kiếm',
-                subtitle: 'Xem các tìm kiếm gần đây',
+                title: localizations.searchHistory,
+                subtitle: localizations.viewRecentSearches,
                 onTap: () => context.pushNamed('searchHistory'),
               ),
               _MenuItem(
                 icon: Icons.receipt_long,
-                title: 'Quản lý đặt vé',
-                subtitle: 'Tra cứu và quản lý vé đã đặt',
+                title: locale.languageCode == 'vi'
+                    ? 'Quản lý đặt vé'
+                    : 'Manage Bookings',
+                subtitle: locale.languageCode == 'vi'
+                    ? 'Tra cứu và quản lý vé đã đặt'
+                    : 'Search and manage booked tickets',
                 onTap: () => context.pushNamed('manage'),
               ),
               _MenuItem(
                 icon: Icons.favorite,
-                title: 'Yêu thích',
-                subtitle: 'Các chuyến và địa điểm yêu thích',
+                title: locale.languageCode == 'vi' ? 'Yêu thích' : 'Favorites',
+                subtitle: locale.languageCode == 'vi'
+                    ? 'Các chuyến và địa điểm yêu thích'
+                    : 'Favorite trips and destinations',
                 onTap: () => context.pushNamed('favorites'),
               ),
             ]),
 
             const SizedBox(height: 16),
 
-            _buildMenuSection(context, 'Cài đặt', [
+            _buildMenuSection(context, localizations.settings, [
               _MenuItem(
-                icon: Icons.notifications,
-                title: 'Thông báo',
-                subtitle: 'Quản lý thông báo push',
-                onTap: () => context.pushNamed('notifications'),
-              ),
-              _MenuItem(
-                icon: Icons.language,
-                title: 'Ngôn ngữ',
-                subtitle: 'Tiếng Việt',
-                onTap: () => _showLanguageSettings(context),
-              ),
-              _MenuItem(
-                icon: Icons.dark_mode,
-                title: 'Giao diện',
-                subtitle: 'Sáng/Tối',
-                onTap: () => _showThemeSettings(context),
+                icon: Icons.settings,
+                title: localizations.settings,
+                subtitle: locale.languageCode == 'vi'
+                    ? 'Thông báo, ngôn ngữ, giao diện'
+                    : 'Notifications, language, theme',
+                onTap: () => context.push('/settings'),
               ),
             ]),
 
             const SizedBox(height: 16),
 
-            _buildMenuSection(context, 'Hỗ trợ', [
-              _MenuItem(
-                icon: Icons.help,
-                title: 'Câu hỏi thường gặp',
-                subtitle: 'FAQ và hướng dẫn sử dụng',
-                onTap: () => context.pushNamed('faq'),
-              ),
-              _MenuItem(
-                icon: Icons.support_agent,
-                title: 'Liên hệ hỗ trợ',
-                subtitle: 'Chat hoặc gọi điện hỗ trợ',
-                onTap: () => context.pushNamed('contactSupport'),
-              ),
-              _MenuItem(
-                icon: Icons.policy,
-                title: 'Chính sách & Điều khoản',
-                subtitle: 'Quy định sử dụng dịch vụ',
-                onTap: () => context.pushNamed('termsPolicy'),
-              ),
-              _MenuItem(
-                icon: Icons.info,
-                title: 'Về DatVe360',
-                subtitle: 'Phiên bản 1.0.0',
-                onTap: () => _showAbout(context),
-              ),
-            ]),
+            _buildMenuSection(
+              context,
+              localizations.locale.languageCode == 'vi'
+                  ? 'Thông tin'
+                  : 'Information',
+              [
+                _MenuItem(
+                  icon: Icons.info,
+                  title: localizations.aboutDatVe360,
+                  subtitle: '${localizations.version} 1.0.0',
+                  onTap: () => _showAbout(context),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 32),
 
@@ -167,7 +154,7 @@ class ProfilePage extends ConsumerWidget {
                   foregroundColor: theme.colorScheme.error,
                   side: BorderSide(color: theme.colorScheme.error),
                 ),
-                child: const Text('Đăng xuất'),
+                child: Text(localizations.logout),
               ),
             ),
           ],
@@ -229,133 +216,6 @@ class ProfilePage extends ConsumerWidget {
         content: Text(
           'Tính năng này sẽ được cập nhật trong phiên bản tiếp theo',
         ),
-      ),
-    );
-  }
-
-  void _showNotificationSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cài đặt thông báo'),
-        content: const Text(
-          'Tính năng cài đặt thông báo sẽ được cập nhật sau.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLanguageSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Chọn ngôn ngữ'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('Tiếng Việt'),
-              value: 'vi',
-              groupValue: 'vi',
-              onChanged: (value) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã chọn Tiếng Việt')),
-                );
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('English'),
-              value: 'en',
-              groupValue: 'vi',
-              onChanged: (value) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('English selected')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showThemeSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Chọn giao diện'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('Theo hệ thống'),
-              value: 'system',
-              groupValue: 'system',
-              onChanged: (value) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã chọn theo hệ thống')),
-                );
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Sáng'),
-              value: 'light',
-              groupValue: 'system',
-              onChanged: (value) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã chọn giao diện sáng')),
-                );
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Tối'),
-              value: 'dark',
-              groupValue: 'system',
-              onChanged: (value) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã chọn giao diện tối')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showSupport(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Liên hệ hỗ trợ'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('📧 Email: support@datve360.com'),
-            SizedBox(height: 8),
-            Text('📞 Hotline: 1900 1234'),
-            SizedBox(height: 8),
-            Text('🕒 Thời gian: 24/7'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
       ),
     );
   }

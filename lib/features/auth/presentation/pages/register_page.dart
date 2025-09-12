@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../data/models/user.dart';
 import '../../data/models/auth_state.dart';
 import '../../domain/providers/auth_provider.dart';
@@ -52,6 +53,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
     final formValidation = ref.watch(registerFormProvider);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     // Listen to auth state changes
     ref.listen<AuthState>(authProvider, (previous, next) {
@@ -91,7 +94,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   const SizedBox(height: 20),
                   _buildIllustration(theme),
                   const SizedBox(height: 32),
-                  _buildHeader(theme),
+                  _buildHeader(theme, localizations),
                   const SizedBox(height: 32),
                   _buildFormContainer(theme, formValidation, authState),
                   const SizedBox(height: 24),
@@ -168,12 +171,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tạo tài khoản mới',
+          localizations.createAccount,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
@@ -181,7 +184,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Đăng ký để trải nghiệm DatVe360',
+          localizations.joinDatVe360,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
           ),

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/i18n/l10n.dart';
+import '../../../../core/i18n/l10n.dart' as l10n;
+import '../../../../core/providers/locale_provider.dart';
+import '../../../../core/providers/connectivity_provider.dart';
+import '../../../../shared/widgets/offline_banner.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../widgets/search_card.dart';
 import '../widgets/transport_mode_tabs.dart';
@@ -44,8 +47,9 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +62,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
             ),
             const SizedBox(width: 8),
             Text(
-              l10n.appName,
+              localizations.appName,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,
@@ -72,7 +76,9 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
               // TODO: Navigate to manage booking
             },
             icon: const Icon(Icons.receipt_long),
-            tooltip: 'Quản lý đặt vé',
+            tooltip: locale.languageCode == 'vi'
+                ? 'Quản lý đặt vé'
+                : 'Manage Bookings',
           ),
         ],
       ),
@@ -119,7 +125,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
                   const SizedBox(height: 32),
 
                   // Recent searches
-                  _buildRecentSearches(context),
+                  _buildRecentSearches(context, localizations),
                 ],
               ),
             ),
@@ -131,15 +137,25 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
   Widget _buildPopularDestinations(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
+    final connectivityState = ref.watch(connectivityNotifierProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Điểm đến phổ biến',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                localizations.popularDestinations,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            CachedDataIndicator(isVisible: !connectivityState.isOnline),
+          ],
         ),
         const SizedBox(height: 16),
         AnimatedSwitcher(
@@ -169,12 +185,14 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
   Widget _buildSpecialOffers(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ưu đãi đặc biệt',
+          localizations.specialOffers,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -211,7 +229,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Giảm 20% cho chuyến đi đầu tiên',
+                      localizations.firstTripDiscount,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -219,7 +237,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Sử dụng mã: DATVE360',
+                      localizations.useCode,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white.withValues(alpha: 0.9),
                       ),
@@ -236,29 +254,31 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
 
   Widget _buildFeaturedServices(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     final services = [
       {
-        'title': 'Đặt vé nhanh',
-        'subtitle': 'Chỉ 3 bước đơn giản',
+        'title': localizations.quickBooking,
+        'subtitle': localizations.quickBookingDesc,
         'icon': Icons.flash_on,
         'color': Colors.orange,
       },
       {
-        'title': 'Hỗ trợ 24/7',
-        'subtitle': 'Luôn sẵn sàng hỗ trợ',
+        'title': localizations.support247,
+        'subtitle': localizations.support247Desc,
         'icon': Icons.support_agent,
         'color': Colors.green,
       },
       {
-        'title': 'Thanh toán an toàn',
-        'subtitle': 'Bảo mật tuyệt đối',
+        'title': localizations.securePayment,
+        'subtitle': localizations.securePaymentDesc,
         'icon': Icons.security,
         'color': Colors.blue,
       },
       {
-        'title': 'Hoàn tiền dễ dàng',
-        'subtitle': 'Chính sách linh hoạt',
+        'title': localizations.easyRefund,
+        'subtitle': localizations.easyRefundDesc,
         'icon': Icons.money_off,
         'color': Colors.purple,
       },
@@ -268,7 +288,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Dịch vụ nổi bật',
+          localizations.featuredServices,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -323,14 +343,17 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     );
   }
 
-  Widget _buildRecentSearches(BuildContext context) {
+  Widget _buildRecentSearches(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
     final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tìm kiếm gần đây',
+          localizations.recentSearches,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -349,13 +372,13 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
               Icon(
                 Icons.history,
                 size: 48,
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
-                'Chưa có tìm kiếm nào',
+                localizations.noRecentSearches,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],

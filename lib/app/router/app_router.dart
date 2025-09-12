@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/widgets/offline_banner.dart';
 import '../../features/search/presentation/pages/home_search_page.dart';
 import '../../features/search/presentation/pages/search_history_page.dart';
 import '../../features/results/presentation/pages/results_page.dart';
@@ -19,6 +21,8 @@ import '../../features/support/presentation/pages/terms_policy_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../core/providers/locale_provider.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -159,6 +163,12 @@ class AppRouter {
         name: 'forgotPassword',
         builder: (context, state) => const ForgotPasswordPage(),
       ),
+
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsPage(),
+      ),
     ],
     errorBuilder: (context, state) => AppErrorPage(error: state.error),
   );
@@ -167,16 +177,17 @@ class AppRouter {
 }
 
 /// Main shell with bottom navigation
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
+class _MainShellState extends ConsumerState<MainShell>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _animationController;
 
@@ -198,9 +209,11 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+    final localizations = ref.watch(localizationsProvider(locale));
 
     return Scaffold(
-      body: widget.child,
+      body: OfflineBanner(child: widget.child),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -250,7 +263,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 size: 24,
                 color: theme.colorScheme.primary,
               ),
-              label: 'Tìm kiếm',
+              label: localizations.search,
             ),
             NavigationDestination(
               icon: Badge(
@@ -263,7 +276,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 size: 24,
                 color: theme.colorScheme.primary,
               ),
-              label: 'Chuyến bay',
+              label: locale.languageCode == 'vi' ? 'Chuyến bay' : 'Flights',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline, size: 24),
@@ -272,7 +285,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 size: 24,
                 color: theme.colorScheme.primary,
               ),
-              label: 'Tài khoản',
+              label: localizations.profile,
             ),
           ],
         ),
