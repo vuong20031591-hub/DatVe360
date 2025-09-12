@@ -9,25 +9,27 @@ const { Server } = require('socket.io');
 
 // Import configurations
 const connectDB = require('./config/database');
-const connectRedis = require('./config/redis');
+// const connectRedis = require('./config/redis'); // Commented out for now
 const logger = require('./utils/logger');
 
-// Import middleware
-const errorHandler = require('./middleware/errorHandler');
-const notFound = require('./middleware/notFound');
+// Import middleware - Temporarily commented out for testing
+// const errorHandler = require('./middleware/errorHandler');
+// const notFound = require('./middleware/notFound');
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-const tripRoutes = require('./routes/trip');
-const bookingRoutes = require('./routes/booking');
-const ticketRoutes = require('./routes/ticket');
-const paymentRoutes = require('./routes/payment');
-const seatRoutes = require('./routes/seat');
-const destinationRoutes = require('./routes/destination');
+let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes;
+try {
+  authRoutes = require('./routes/auth');
+  tripRoutes = require('./routes/trip');
+  bookingRoutes = require('./routes/bookings');
+  scheduleRoutes = require('./routes/schedules');
+} catch (error) {
+  console.error('Error importing routes:', error);
+  process.exit(1);
+}
 
-// Import socket handlers
-const socketHandler = require('./socket/socketHandler');
+// Import socket handlers (commented out for now)
+// const socketHandler = require('./socket/socketHandler');
 
 const app = express();
 const server = createServer(app);
@@ -40,12 +42,12 @@ const io = new Server(server, {
 
 // Connect to databases
 connectDB();
-connectRedis();
+// connectRedis(); // Commented out for now
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ["http://localhost:3000"],
+  origin: true, // Allow all origins for testing
   credentials: true
 }));
 
@@ -68,8 +70,8 @@ app.use(morgan('combined', {
   stream: { write: message => logger.info(message.trim()) }
 }));
 
-// Socket.IO
-socketHandler(io);
+// Socket.IO (commented out for now)
+// socketHandler(io);
 app.set('io', io);
 
 // Health check
@@ -85,20 +87,16 @@ app.get('/health', (req, res) => {
 const API_PREFIX = `/api/${process.env.API_VERSION || 'v1'}`;
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
-app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/trips`, tripRoutes);
 app.use(`${API_PREFIX}/bookings`, bookingRoutes);
-app.use(`${API_PREFIX}/tickets`, ticketRoutes);
-app.use(`${API_PREFIX}/payments`, paymentRoutes);
-app.use(`${API_PREFIX}/seats`, seatRoutes);
-app.use(`${API_PREFIX}/destinations`, destinationRoutes);
+app.use(`${API_PREFIX}/schedules`, scheduleRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static('uploads'));
 
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
+// Error handling middleware - Temporarily commented out for testing
+// app.use(notFound);
+// app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

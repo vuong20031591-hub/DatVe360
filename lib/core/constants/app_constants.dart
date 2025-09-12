@@ -7,7 +7,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String baseUrl = 'http://localhost:3000/api/v1';
+  static const String baseUrl = 'http://localhost:5000/api/v1';
   static const String prodBaseUrl = 'https://api.datve360.com/v1';
   static const Duration requestTimeout = Duration(seconds: 30);
   static const Duration cacheTimeout = Duration(minutes: 5);

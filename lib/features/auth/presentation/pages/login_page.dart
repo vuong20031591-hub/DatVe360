@@ -430,7 +430,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     // Perform login
     final request = LoginRequest(
-      emailOrPhone: _emailController.text.trim(),
+      email: _emailController.text.trim(),
       password: _passwordController.text,
       rememberMe: _rememberMe,
     );

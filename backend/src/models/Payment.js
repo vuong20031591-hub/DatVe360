@@ -1,106 +1,6 @@
 const mongoose = require('mongoose');
 
-const PaymentSchema = new mongoose.Schema({
-  bookingId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Booking',
-    required: true,
-    index: true
-  },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  currency: {
-    type: String,
-    default: 'VND',
-    enum: ['VND', 'USD']
-  },
-  method: {
-    type: String,
-    required: true,
-    enum: ['vnpay', 'momo', 'stripe', 'bank_transfer']
-  },
-  status: {
-    type: String,
-    default: 'pending',
-    enum: ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded'],
-    index: true
-  },
-  transactionId: {
-    type: String,
-    unique: true,
-    sparse: true
-  },
-  gatewayTransactionId: {
-    type: String,
-    sparse: true
-  },
-  gatewayResponse: {
-    type: mongoose.Schema.Types.Mixed
-  },
-  refundAmount: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  refundReason: String,
-  metadata: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  }
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
-
-// Indexes
-PaymentSchema.index({ userId: 1, createdAt: -1 });
-PaymentSchema.index({ bookingId: 1 });
-PaymentSchema.index({ status: 1, createdAt: -1 });
-PaymentSchema.index({ transactionId: 1 });
-
-// Virtuals
-PaymentSchema.virtual('isCompleted').get(function() {
-  return this.status === 'completed';
-});
-
-PaymentSchema.virtual('canRefund').get(function() {
-  return this.status === 'completed' && this.refundAmount < this.amount;
-});
-
-// Methods
-PaymentSchema.methods.markAsCompleted = function(gatewayData) {
-  this.status = 'completed';
-  this.gatewayTransactionId = gatewayData.transactionId;
-  this.gatewayResponse = gatewayData;
-  return this.save();
-};
-
-PaymentSchema.methods.markAsFailed = function(error) {
-  this.status = 'failed';
-  this.gatewayResponse = { error };
-  return this.save();
-};
-
-// Static methods
-PaymentSchema.statics.findByBooking = function(bookingId) {
-  return this.findOne({ bookingId }).populate('booking user');
-};
-
-PaymentSchema.statics.findByTransactionId = function(transactionId) {
-  return this.findOne({ transactionId });
-};
-
-module.exports = mongoose.model('Payment', PaymentSchema);
+// First Payment schema removed to avoid duplicate model error
 
 const paymentSchema = new mongoose.Schema({
   bookingId: {
@@ -233,11 +133,11 @@ const paymentSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-paymentSchema.index({ bookingId: 1 });
+// Indexes (bookingId, transactionId, gatewayTransactionId already have indexes defined in schema)
+// paymentSchema.index({ bookingId: 1 }); // Removed - already indexed
 paymentSchema.index({ userId: 1, createdAt: -1 });
-paymentSchema.index({ transactionId: 1 });
-paymentSchema.index({ gatewayTransactionId: 1 }, { sparse: true });
+// paymentSchema.index({ transactionId: 1 }); // Removed - already unique
+// paymentSchema.index({ gatewayTransactionId: 1 }, { sparse: true }); // Removed - already indexed
 paymentSchema.index({ paymentMethod: 1, status: 1 });
 paymentSchema.index({ status: 1, createdAt: -1 });
 paymentSchema.index({ expiredAt: 1 }, { sparse: true });

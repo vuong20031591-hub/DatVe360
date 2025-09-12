@@ -105,9 +105,9 @@ const UserSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-UserSchema.index({ email: 1 });
-UserSchema.index({ phoneNumber: 1 });
+// Indexes (email and phoneNumber already have unique indexes)
+// UserSchema.index({ email: 1 }); // Removed - already unique
+// UserSchema.index({ phoneNumber: 1 }); // Removed - already unique
 UserSchema.index({ role: 1, isActive: 1 });
 UserSchema.index({ createdAt: -1 });
 

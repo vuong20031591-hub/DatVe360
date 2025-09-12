@@ -22,18 +22,17 @@ class MockAuthRepository implements AuthRepository {
     User(
       id: '1',
       email: 'admin@datve360.com',
-      fullName: 'Admin User',
+      displayName: 'Admin User',
       createdAt: DateTime.now().subtract(const Duration(days: 30)),
-      isEmailVerified: true,
+      isVerified: true,
     ),
     User(
       id: '2',
       email: 'user@example.com',
-      phone: '0123456789',
-      fullName: 'Test User',
+      phoneNumber: '0123456789',
+      displayName: 'Test User',
       createdAt: DateTime.now().subtract(const Duration(days: 15)),
-      isEmailVerified: true,
-      isPhoneVerified: true,
+      isVerified: true,
     ),
   ];
 
@@ -49,9 +48,9 @@ class MockAuthRepository implements AuthRepository {
   Future<AuthResponse> login(LoginRequest request) async {
     await Future.delayed(_networkDelay);
 
-    // Find user by email or phone
+    // Find user by email
     final user = _users.firstWhere(
-      (u) => u.email == request.emailOrPhone || u.phone == request.emailOrPhone,
+      (u) => u.email == request.email,
       orElse: () => throw Exception('Tài khoản không tồn tại'),
     );
 
@@ -72,7 +71,7 @@ class MockAuthRepository implements AuthRepository {
       user: updatedUser,
       accessToken: 'mock_access_token_${updatedUser.id}',
       refreshToken: 'mock_refresh_token_${updatedUser.id}',
-      expiresAt: DateTime.now().add(const Duration(hours: 24)),
+      expiresIn: '24h',
     );
   }
 
@@ -82,7 +81,9 @@ class MockAuthRepository implements AuthRepository {
 
     // Check if user already exists
     final existingUser = _users.where(
-      (u) => u.email == request.email || (request.phone != null && u.phone == request.phone),
+      (u) =>
+          u.email == request.email ||
+          (request.phoneNumber != null && u.phoneNumber == request.phoneNumber),
     );
 
     if (existingUser.isNotEmpty) {
@@ -98,11 +99,10 @@ class MockAuthRepository implements AuthRepository {
     final newUser = User(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       email: request.email,
-      phone: request.phone,
-      fullName: request.fullName,
+      phoneNumber: request.phoneNumber,
+      displayName: request.displayName,
       createdAt: DateTime.now(),
-      isEmailVerified: false,
-      isPhoneVerified: false,
+      isVerified: false,
     );
 
     // Add to mock database
@@ -115,7 +115,7 @@ class MockAuthRepository implements AuthRepository {
       user: newUser,
       accessToken: 'mock_access_token_${newUser.id}',
       refreshToken: 'mock_refresh_token_${newUser.id}',
-      expiresAt: DateTime.now().add(const Duration(hours: 24)),
+      expiresIn: '24h',
     );
   }
 
@@ -137,7 +137,7 @@ class MockAuthRepository implements AuthRepository {
       user: _currentUser!,
       accessToken: 'mock_access_token_${_currentUser!.id}_refreshed',
       refreshToken: 'mock_refresh_token_${_currentUser!.id}_refreshed',
-      expiresAt: DateTime.now().add(const Duration(hours: 24)),
+      expiresIn: '24h',
     );
   }
 

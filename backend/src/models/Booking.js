@@ -127,12 +127,12 @@ const BookingSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// Indexes (pnr and expiresAt already have indexes defined in schema)
 BookingSchema.index({ userId: 1, createdAt: -1 });
-BookingSchema.index({ pnr: 1 });
+// BookingSchema.index({ pnr: 1 }); // Removed - already unique
 BookingSchema.index({ status: 1, createdAt: -1 });
 BookingSchema.index({ scheduleId: 1, status: 1 });
-BookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// BookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Removed - already defined in schema
 
 // Virtuals
 BookingSchema.virtual('isPending').get(function() {

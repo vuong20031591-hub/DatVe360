@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 
 const connectDB = async () => {
   try {
@@ -10,8 +10,8 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       family: 4,
-      bufferMaxEntries: 0,
-      bufferCommands: false,
+      // bufferMaxEntries: 0, // Deprecated option removed
+      // bufferCommands: false, // Deprecated option removed
     };
 
     // Connect to MongoDB

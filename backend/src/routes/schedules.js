@@ -1,12 +1,12 @@
 const express = require('express');
 const { query, param, validationResult } = require('express-validator');
 const Schedule = require('../models/Schedule');
-const Route = require('../models/Route');
+// const Route = require('../models/Route'); // Commented out - model doesn't exist
 const Destination = require('../models/Destination');
 const AuthMiddleware = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../middleware/errorHandler');
-const logger = require('../config/logger');
-const redis = require('../config/redis');
+const logger = require('../utils/logger');
+// const redis = require('../config/redis'); // Commented out for now
 
 const router = express.Router();
 
@@ -50,22 +50,22 @@ router.get('/search',
       page = 1
     } = req.query;
 
-    // Create cache key
-    const cacheKey = redis.getCacheKey('schedules_search', 
-      JSON.stringify({ from, to, departureDate, passengers, className, sortBy })
-    );
+    // Create cache key - Commented out for now
+    // const cacheKey = redis.getCacheKey('schedules_search',
+    //   JSON.stringify({ from, to, departureDate, passengers, className, sortBy })
+    // );
 
-    // Check cache first
-    if (redis.isConnected) {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return res.json({
-          success: true,
-          data: cached,
-          cached: true
-        });
-      }
-    }
+    // Check cache first - Commented out for now
+    // if (redis.isConnected) {
+    //   const cached = await redis.get(cacheKey);
+    //   if (cached) {
+    //     return res.json({
+    //       success: true,
+    //       data: cached,
+    //       cached: true
+    //     });
+    //   }
+    // }
 
     // Find destinations
     const [fromDestination, toDestination] = await Promise.all([
@@ -293,10 +293,10 @@ router.get('/search',
       }
     };
 
-    // Cache results for 5 minutes
-    if (redis.isConnected) {
-      await redis.set(cacheKey, result, 300);
-    }
+    // Cache results for 5 minutes - Commented out for now
+    // if (redis.isConnected) {
+    //   await redis.set(cacheKey, result, 300);
+    // }
 
     // Log search
     logger.info('Schedule search performed', {
@@ -326,19 +326,19 @@ router.get('/popular-routes',
   asyncHandler(async (req, res) => {
     const { limit = 10 } = req.query;
 
-    const cacheKey = redis.getCacheKey('popular_routes', limit);
+    // const cacheKey = redis.getCacheKey('popular_routes', limit); // Commented out for now
 
-    // Check cache
-    if (redis.isConnected) {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return res.json({
-          success: true,
-          data: cached,
-          cached: true
-        });
-      }
-    }
+    // Check cache - Commented out for now
+    // if (redis.isConnected) {
+    //   const cached = await redis.get(cacheKey);
+    //   if (cached) {
+    //     return res.json({
+    //       success: true,
+    //       data: cached,
+    //       cached: true
+    //     });
+    //   }
+    // }
 
     // Get popular routes based on booking frequency
     const popularRoutes = await Schedule.aggregate([
@@ -434,10 +434,10 @@ router.get('/popular-routes',
       }
     ]);
 
-    // Cache for 1 hour
-    if (redis.isConnected) {
-      await redis.set(cacheKey, popularRoutes, 3600);
-    }
+    // Cache for 1 hour - Commented out for now
+    // if (redis.isConnected) {
+    //   await redis.set(cacheKey, popularRoutes, 3600);
+    // }
 
     res.json({
       success: true,

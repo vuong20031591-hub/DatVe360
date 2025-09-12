@@ -46,7 +46,7 @@ class ProfilePage extends ConsumerWidget {
                         children: [
                           Text(
                             authState.isAuthenticated
-                                ? authState.user!.fullName
+                                ? authState.user!.displayName
                                 : localizations.guest,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,

@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const AuthMiddleware = require('../middleware/auth');
 const { asyncHandler, ValidationError, UnauthorizedError, NotFoundError } = require('../middleware/errorHandler');
-const logger = require('../config/logger');
-const redis = require('../config/redis');
+const logger = require('../utils/logger');
+// const redis = require('../config/redis'); // Commented out for now
 
 const router = express.Router();
 
@@ -89,7 +89,7 @@ router.post('/register',
     const { accessToken, refreshToken } = AuthMiddleware.generateTokens(user._id);
     await user.addRefreshToken(refreshToken);
 
-    logger.authLogger.info('User registered', {
+    logger.info('User registered', {
       userId: user._id,
       email: user.email
     });
@@ -148,7 +148,7 @@ router.post('/login',
     // Set token expiry based on remember me
     const tokenExpiry = rememberMe ? '30d' : '7d';
 
-    logger.authLogger.info('User logged in', {
+    logger.info('User logged in', {
       userId: user._id,
       email: user.email,
       rememberMe
@@ -202,7 +202,7 @@ router.post('/refresh',
     await user.removeRefreshToken(refreshToken);
     await user.addRefreshToken(newRefreshToken);
 
-    logger.authLogger.info('Token refreshed', { userId });
+    logger.info('Token refreshed', { userId });
 
     res.json({
       success: true,
@@ -231,13 +231,13 @@ router.post('/logout',
       await req.user.removeRefreshToken(refreshToken);
     }
 
-    // Add token to blacklist (if using Redis)
-    if (redis.isConnected) {
-      const tokenExpiry = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 7 days
-      await redis.set(`blacklist_${req.token}`, '1', tokenExpiry);
-    }
+    // Add token to blacklist (if using Redis) - Commented out for now
+    // if (redis.isConnected) {
+    //   const tokenExpiry = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 7 days
+    //   await redis.set(`blacklist_${req.token}`, '1', tokenExpiry);
+    // }
 
-    logger.authLogger.info('User logged out', {
+    logger.info('User logged out', {
       userId: req.user._id,
       email: req.user.email
     });
@@ -258,7 +258,7 @@ router.post('/logout-all',
   asyncHandler(async (req, res) => {
     await req.user.clearRefreshTokens();
 
-    logger.authLogger.info('User logged out from all devices', {
+    logger.info('User logged out from all devices', {
       userId: req.user._id,
       email: req.user.email
     });
@@ -334,7 +334,7 @@ router.put('/profile',
     Object.assign(req.user, updates);
     await req.user.save();
 
-    logger.authLogger.info('Profile updated', {
+    logger.info('Profile updated', {
       userId: req.user._id,
       updates: Object.keys(updates)
     });
@@ -378,7 +378,7 @@ router.post('/change-password',
     // Clear all refresh tokens for security
     await user.clearRefreshTokens();
 
-    logger.authLogger.info('Password changed', {
+    logger.info('Password changed', {
       userId: user._id,
       email: user.email
     });
@@ -408,7 +408,7 @@ router.post('/forgot-password',
     await user.generatePasswordReset();
 
     // In production, send email here
-    logger.authLogger.info('Password reset requested', {
+    logger.info('Password reset requested', {
       userId: user._id,
       email: user.email,
       resetToken: user.resetPasswordToken
@@ -454,7 +454,7 @@ router.post('/reset-password',
     // Clear all refresh tokens
     await user.clearRefreshTokens();
 
-    logger.authLogger.info('Password reset completed', {
+    logger.info('Password reset completed', {
       userId: user._id,
       email: user.email
     });

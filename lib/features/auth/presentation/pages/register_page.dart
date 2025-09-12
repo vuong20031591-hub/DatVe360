@@ -451,9 +451,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     // Perform registration
     final request = RegisterRequest(
-      fullName: _fullNameController.text.trim(),
+      displayName: _fullNameController.text.trim(),
       email: _emailController.text.trim(),
-      phone: _phoneController.text.trim().isEmpty
+      phoneNumber: _phoneController.text.trim().isEmpty
           ? null
           : _phoneController.text.trim(),
       password: _passwordController.text,

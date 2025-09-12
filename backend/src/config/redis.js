@@ -1,5 +1,5 @@
 const Redis = require('ioredis');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 
 class RedisClient {
   constructor() {
@@ -24,7 +24,8 @@ class RedisClient {
       });
 
       this.setupEventHandlers();
-      this.connect();
+      // Don't auto-connect, only connect when explicitly called
+      // this.connect();
     } catch (error) {
       logger.error('Redis initialization error:', error);
     }

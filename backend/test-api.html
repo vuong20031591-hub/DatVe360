@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DatVe360 API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 DatVe360 API Test Dashboard</h1>
+        
+        <!-- Health Check -->
+        <div class="test-section">
+            <h3>Health Check</h3>
+            <button onclick="testHealthCheck()">Test Health Check</button>
+            <div id="health-result" class="result"></div>
+        </div>
+
+        <!-- Authentication -->
+        <div class="test-section">
+            <h3>Authentication</h3>
+            <div>
+                <label>Email:</label>
+                <input type="email" id="login-email" value="admin@datve360.com" />
+                <label>Password:</label>
+                <input type="password" id="login-password" value="123456" />
+                <button onclick="testLogin()">Test Login</button>
+            </div>
+            <div id="auth-result" class="result"></div>
+        </div>
+
+        <!-- Schedule Search -->
+        <div class="test-section">
+            <h3>Schedule Search</h3>
+            <div>
+                <label>From:</label>
+                <input type="text" id="search-from" value="HAN" />
+                <label>To:</label>
+                <input type="text" id="search-to" value="SGN" />
+                <label>Date:</label>
+                <input type="date" id="search-date" value="2025-09-15" />
+                <button onclick="testScheduleSearch()">Test Schedule Search</button>
+            </div>
+            <div id="schedule-result" class="result"></div>
+        </div>
+
+        <!-- User Profile (requires auth) -->
+        <div class="test-section">
+            <h3>User Profile (Protected)</h3>
+            <button onclick="testUserProfile()">Test Get Profile</button>
+            <div id="profile-result" class="result"></div>
+        </div>
+
+        <!-- Bookings (requires auth) -->
+        <div class="test-section">
+            <h3>User Bookings (Protected)</h3>
+            <button onclick="testUserBookings()">Test Get Bookings</button>
+            <div id="bookings-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                        ...options.headers
+                    }
+                });
+                
+                const data = await response.json();
+                return {
+                    status: response.status,
+                    statusText: response.statusText,
+                    success: response.ok,
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${result.success ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(result, null, 2);
+        }
+
+        async function testHealthCheck() {
+            const result = await makeRequest('http://localhost:5000/health');
+            displayResult('health-result', result);
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const result = await makeRequest('http://localhost:5000/api/v1/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            if (result.success && result.data.data && result.data.data.tokens && result.data.data.tokens.accessToken) {
+                authToken = result.data.data.tokens.accessToken;
+                result.message = 'Login successful! Token saved for protected requests.';
+            }
+
+            displayResult('auth-result', result);
+        }
+
+        async function testScheduleSearch() {
+            const from = document.getElementById('search-from').value;
+            const to = document.getElementById('search-to').value;
+            const date = document.getElementById('search-date').value;
+            
+            const url = `http://localhost:5000/api/v1/schedules/search?from=${from}&to=${to}&departureDate=${date}`;
+            const result = await makeRequest(url);
+            displayResult('schedule-result', result);
+        }
+
+        async function testUserProfile() {
+            if (!authToken) {
+                displayResult('profile-result', {
+                    success: false,
+                    error: 'Please login first to get auth token'
+                });
+                return;
+            }
+
+            const result = await makeRequest('http://localhost:5000/api/v1/auth/me');
+            displayResult('profile-result', result);
+        }
+
+        async function testUserBookings() {
+            if (!authToken) {
+                displayResult('bookings-result', {
+                    success: false,
+                    error: 'Please login first to get auth token'
+                });
+                return;
+            }
+
+            const result = await makeRequest('http://localhost:5000/api/v1/bookings');
+            displayResult('bookings-result', result);
+        }
+    </script>
+</body>
+</html>

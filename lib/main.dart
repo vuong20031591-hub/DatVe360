@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
+
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app/router/app_router.dart';
@@ -12,18 +12,12 @@ import 'core/providers/locale_provider.dart' as locale_providers;
 import 'core/services/settings_service.dart';
 import 'core/services/cache_service.dart';
 import 'core/services/connectivity_service.dart';
+import 'core/storage/storage_service.dart';
 import 'core/constants/app_constants.dart';
 import 'core/i18n/l10n.dart' as app_l10n;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
-  }
 
   // Initialize Hive
   await Hive.initFlutter();
@@ -46,6 +40,10 @@ void main() async {
   // Initialize Connectivity Service
   final connectivityService = ConnectivityService.instance;
   await connectivityService.init();
+
+  // Initialize Storage Service
+  final storageService = StorageService.instance;
+  await storageService.init();
 
   runApp(
     ProviderScope(

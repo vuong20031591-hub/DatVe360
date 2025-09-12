@@ -38,8 +38,7 @@ dependencies:
   pdf: ^3.11.3
   path_provider: ^2.1.5
   share_plus: ^11.1.0
-  firebase_core: ^4.1.0
-  firebase_messaging: ^16.0.1
+
   lottie: ^3.3.2
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1

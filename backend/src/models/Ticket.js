@@ -55,12 +55,12 @@ const TicketSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// Indexes (bookingId, pnr, ticketNumber, status already have indexes defined in schema)
 TicketSchema.index({ userId: 1, createdAt: -1 });
-TicketSchema.index({ bookingId: 1 });
-TicketSchema.index({ pnr: 1 });
-TicketSchema.index({ ticketNumber: 1 });
-TicketSchema.index({ status: 1 });
+// TicketSchema.index({ bookingId: 1 }); // Removed - already indexed
+// TicketSchema.index({ pnr: 1 }); // Removed - already indexed
+// TicketSchema.index({ ticketNumber: 1 }); // Removed - already unique
+// TicketSchema.index({ status: 1 }); // Removed - already indexed
 
 // Virtuals
 TicketSchema.virtual('isValid').get(function() {
