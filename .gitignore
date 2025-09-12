@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node.js Backend
+backend/node_modules/
+backend/.env
+backend/uploads/
+backend/logs/
+backend/dist/
+backend/.nyc_output/
+backend/coverage/
+
+# Custom exclusions
+.cunzhi-memory/
+AGENTS.md
