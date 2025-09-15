@@ -10,12 +10,13 @@ class BookingRepository {
   // Create a new booking
   Future<Booking> createBooking(Map<String, dynamic> bookingData) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.post('/bookings', data: bookingData);
-      // return Booking.fromJson(response.data);
+      final response = await _dioClient.post('/bookings', data: bookingData);
 
-      // For now, throw unimplemented
-      throw UnimplementedError('Booking creation not implemented');
+      if (response.data['success'] == true && response.data['data'] != null) {
+        return Booking.fromJson(response.data['data']['booking']);
+      } else {
+        throw Exception(response.data['message'] ?? 'Tạo booking thất bại');
+      }
     } catch (e) {
       throw Exception('Failed to create booking: $e');
     }
@@ -24,11 +25,11 @@ class BookingRepository {
   // Get booking by ID
   Future<Booking?> getBookingById(String bookingId) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.get('/bookings/$bookingId');
-      // return Booking.fromJson(response.data);
+      final response = await _dioClient.get('/bookings/$bookingId');
 
-      // For now, return null
+      if (response.data['success'] == true && response.data['data'] != null) {
+        return Booking.fromJson(response.data['data']);
+      }
       return null;
     } catch (e) {
       throw Exception('Failed to get booking: $e');
@@ -38,13 +39,16 @@ class BookingRepository {
   // Search bookings by booking ID and email
   Future<List<Booking>> searchBookings(String bookingId, String email) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.get('/bookings/search',
-      //   queryParameters: {'booking_id': bookingId, 'email': email});
-      // final List<dynamic> data = response.data['bookings'];
-      // return data.map((json) => Booking.fromJson(json)).toList();
+      final response = await _dioClient.get(
+        '/bookings/search',
+        queryParameters: {'booking_id': bookingId, 'email': email},
+      );
 
-      // For now, return empty list
+      if (response.data['success'] == true && response.data['data'] != null) {
+        final List<dynamic> bookingsData =
+            response.data['data']['bookings'] ?? [];
+        return bookingsData.map((json) => Booking.fromJson(json)).toList();
+      }
       return [];
     } catch (e) {
       throw Exception('Failed to search bookings: $e');
@@ -90,12 +94,13 @@ class BookingRepository {
   // Get user bookings
   Future<List<Booking>> getUserBookings(String userId) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.get('/users/$userId/bookings');
-      // final List<dynamic> data = response.data['bookings'];
-      // return data.map((json) => Booking.fromJson(json)).toList();
+      final response = await _dioClient.get('/bookings');
 
-      // For now, return empty list
+      if (response.data['success'] == true && response.data['data'] != null) {
+        final List<dynamic> bookingsData =
+            response.data['data']['bookings'] ?? [];
+        return bookingsData.map((json) => Booking.fromJson(json)).toList();
+      }
       return [];
     } catch (e) {
       throw Exception('Failed to get user bookings: $e');

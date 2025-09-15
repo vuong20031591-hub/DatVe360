@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../widgets/seat_map_widget.dart';
@@ -7,9 +8,10 @@ import '../widgets/fare_selector.dart';
 import '../widgets/trip_info_card.dart';
 
 class TripDetailPage extends ConsumerStatefulWidget {
-  const TripDetailPage({super.key, required this.tripId});
+  const TripDetailPage({super.key, required this.tripId, this.schedule});
 
   final String tripId;
+  final dynamic schedule;
 
   @override
   ConsumerState<TripDetailPage> createState() => _TripDetailPageState();
@@ -20,6 +22,7 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
   late TabController _tabController;
   String? _selectedClassId;
   List<String> _selectedSeatIds = [];
+  List<dynamic> _selectedSeatData = []; // Store seat data with price addons
   bool _isLoading = true;
   Map<String, dynamic>? _tripData;
 
@@ -42,12 +45,13 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
     });
 
     try {
-      // TODO: Replace with real API call
-      // final tripRepository = TripRepository(DioClient());
-      // _tripData = await tripRepository.getTripById(widget.tripId);
-
-      // For now, set empty data
-      _tripData = null;
+      // Use schedule data passed from navigation if available
+      if (widget.schedule != null) {
+        _tripData = _convertScheduleToTripData(widget.schedule);
+      } else {
+        // TODO: Fallback to API call if no schedule data
+        _tripData = null;
+      }
     } catch (e) {
       // Handle error
       _tripData = null;
@@ -153,12 +157,17 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
                       TripInfoCard(tripData: _tripData!),
                       const SizedBox(height: 16),
                       FareSelector(
-                        classes: _tripData!['classes'],
+                        classes: _tripData!['classes'] is List
+                            ? List<Map<String, dynamic>>.from(
+                                _tripData!['classes'],
+                              )
+                            : <Map<String, dynamic>>[],
                         selectedClassId: _selectedClassId,
                         onClassSelected: (classId) {
                           setState(() {
                             _selectedClassId = classId;
                             _selectedSeatIds.clear();
+                            _selectedSeatData.clear();
                           });
                         },
                       ),
@@ -172,9 +181,10 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
                         tripId: widget.tripId,
                         classId: _selectedClassId!,
                         selectedSeatIds: _selectedSeatIds,
-                        onSeatsChanged: (seatIds) {
+                        onSeatsChanged: (seatIds, seatData) {
                           setState(() {
                             _selectedSeatIds = seatIds;
+                            _selectedSeatData = seatData;
                           });
                         },
                       )
@@ -235,22 +245,54 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
 
   String _getSelectedClassPrice() {
     if (_selectedClassId == null) return '';
-    final classes = _tripData!['classes'] as List;
-    final selectedClass = classes.firstWhere(
-      (c) => c['id'] == _selectedClassId,
-    );
-    return _formatPrice(selectedClass['price']);
+
+    final classes = _tripData!['classes'];
+    if (classes is! List || classes.isEmpty) return '';
+
+    try {
+      final selectedClass = classes.firstWhere(
+        (c) => c['id'] == _selectedClassId,
+        orElse: () => null,
+      );
+      if (selectedClass == null) return '';
+      final price = selectedClass['price'] is num
+          ? (selectedClass['price'] as num).toInt()
+          : 0;
+      return _formatPrice(price);
+    } catch (e) {
+      return '';
+    }
   }
 
   String _getTotalPrice() {
     if (_selectedClassId == null) return '';
-    final classes = _tripData!['classes'] as List;
-    final selectedClass = classes.firstWhere(
-      (c) => c['id'] == _selectedClassId,
-    );
-    final basePrice = selectedClass['price'] as int;
-    final seatPrice = _selectedSeatIds.length * 50000; // Mock seat price
-    return _formatPrice(basePrice + seatPrice);
+
+    final classes = _tripData!['classes'];
+    if (classes is! List || classes.isEmpty) return '';
+
+    try {
+      final selectedClass = classes.firstWhere(
+        (c) => c['id'] == _selectedClassId,
+        orElse: () => null,
+      );
+      if (selectedClass == null) return '';
+
+      final basePrice = (selectedClass['price'] is num
+          ? (selectedClass['price'] as num).toInt()
+          : 0);
+
+      // Calculate real seat price addons
+      int seatPrice = 0;
+      for (final seatData in _selectedSeatData) {
+        if (seatData != null && seatData.priceAddon != null) {
+          seatPrice += (seatData.priceAddon as num).toInt();
+        }
+      }
+
+      return _formatPrice(basePrice + seatPrice);
+    } catch (e) {
+      return '';
+    }
   }
 
   String _formatPrice(int price) {
@@ -258,13 +300,88 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
   }
 
   void _continueBooking() {
-    // TODO: Navigate to booking page
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Tiếp tục đặt vé với ${_selectedSeatIds.length} ghế: ${_selectedSeatIds.join(', ')}',
-        ),
-      ),
+    if (_tripData == null) return;
+
+    // Navigate to booking page with trip data and selected seats
+    context.pushNamed(
+      'booking',
+      extra: {
+        'trip': _tripData,
+        'selectedSeats': _selectedSeatIds,
+        'selectedSeatData': _selectedSeatData,
+        'selectedClass': _selectedClassId,
+      },
     );
+  }
+
+  /// Convert Schedule model to trip data format expected by UI
+  Map<String, dynamic> _convertScheduleToTripData(dynamic schedule) {
+    if (schedule == null) return {};
+
+    // Format time strings
+    final departTime = schedule.departureTime.toString().substring(11, 16);
+    final arriveTime = schedule.arrivalTime.toString().substring(11, 16);
+    final durationHours = schedule.duration.inHours;
+    final durationMinutes = schedule.duration.inMinutes % 60;
+    final durationStr = '${durationHours}h ${durationMinutes}m';
+
+    // Convert classes Map to List format expected by UI
+    List<Map<String, dynamic>> classesList = [];
+    if (schedule.classes is Map) {
+      final classesMap = schedule.classes as Map<String, dynamic>;
+      classesMap.forEach((key, value) {
+        if (value is Map) {
+          classesList.add({
+            'id': key,
+            'name': key.toUpperCase(),
+            'price': value['price'] is num
+                ? (value['price'] as num).toInt()
+                : schedule.price.toInt(),
+            'currency': value['currency'] ?? schedule.currency,
+            'availableSeats':
+                value['availableSeats'] ?? schedule.availableSeats,
+            'amenities': value['amenities'] is List
+                ? List<String>.from(value['amenities'])
+                : <String>[],
+          });
+        }
+      });
+    }
+
+    // If no classes found, create default economy class
+    if (classesList.isEmpty) {
+      classesList.add({
+        'id': 'economy',
+        'name': 'ECONOMY',
+        'price': schedule.price.toInt(),
+        'currency': schedule.currency,
+        'availableSeats': schedule.availableSeats,
+        'amenities': [],
+      });
+    }
+
+    return {
+      'id': schedule.id,
+      'carrier': schedule.operatorName,
+      'flightNumber': schedule.vehicleNumber,
+      'from': schedule.from,
+      'to': schedule.to,
+      'fromCode': schedule.fromCode,
+      'toCode': schedule.toCode,
+      'departTime': departTime,
+      'arriveTime': arriveTime,
+      'duration': durationStr,
+      'price': schedule.price.toInt(),
+      'currency': schedule.currency,
+      'availableSeats': schedule.availableSeats,
+      'totalSeats': schedule.totalSeats,
+      'classes': classesList,
+      'transportType': schedule.transportType,
+      'vehicleType': schedule.vehicleType,
+      'aircraft': schedule.metadata['model'] ?? 'N/A',
+      'registrationNumber': schedule.metadata['registrationNumber'] ?? 'N/A',
+      'facilities': schedule.metadata['facilities'] ?? [],
+      'status': schedule.status,
+    };
   }
 }

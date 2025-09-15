@@ -3,11 +3,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class TripCard extends StatelessWidget {
-  const TripCard({
-    super.key,
-    required this.trip,
-    required this.onTap,
-  });
+  const TripCard({super.key, required this.trip, required this.onTap});
 
   final Map<String, dynamic> trip;
   final VoidCallback onTap;
@@ -42,9 +38,9 @@ class TripCard extends StatelessWidget {
                       color: AppColors.flightColor,
                     ),
                   ),
-                  
+
                   const SizedBox(width: 12),
-                  
+
                   // Time and route info
                   Expanded(
                     child: Column(
@@ -71,7 +67,8 @@ class TripCard extends StatelessWidget {
                                   Text(
                                     trip['duration'],
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
                                     ),
                                   ),
                                 ],
@@ -86,16 +83,18 @@ class TripCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 4),
-                        
+
                         // Route and stops
                         Row(
                           children: [
                             Text(
                               trip['route'],
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.7,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -106,7 +105,9 @@ class TripCard extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.lightSuccess.withOpacity(0.1),
+                                  color: AppColors.lightSuccess.withOpacity(
+                                    0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -121,7 +122,8 @@ class TripCard extends StatelessWidget {
                               Text(
                                 '${trip['stops']} điểm dừng',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                                 ),
                               ),
                           ],
@@ -129,9 +131,9 @@ class TripCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(width: 12),
-                  
+
                   // Price
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -153,9 +155,9 @@ class TripCard extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Additional info
               Row(
                 children: [
@@ -168,11 +170,12 @@ class TripCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Aircraft type
-                  if (trip['aircraft'] != null)
+                  if (trip['metadata'] != null &&
+                      trip['metadata']['model'] != null)
                     Text(
-                      trip['aircraft'],
+                      trip['metadata']['model'],
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -187,9 +190,6 @@ class TripCard extends StatelessWidget {
   }
 
   String _formatPrice(int price) {
-    return '${(price / 1000).toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    )}K';
+    return '${(price / 1000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}K';
   }
 }

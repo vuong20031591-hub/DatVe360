@@ -4,6 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
 
 class ManageBookingPage extends ConsumerStatefulWidget {
@@ -271,17 +272,41 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
       _hasSearched = false;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final bookingId = _bookingIdController.text.toUpperCase();
+      final email = _emailController.text.toLowerCase();
 
-    // TODO: Replace with real API call
-    // final bookingId = _bookingIdController.text.toUpperCase();
-    // final email = _emailController.text.toLowerCase();
-    // final bookingRepository = BookingRepository(DioClient());
-    // _bookings = await bookingRepository.searchBookings(bookingId, email);
+      final bookings = await ref
+          .read(bookingProvider.notifier)
+          .searchBookings(bookingId, email);
 
-    // For now, return empty list
-    _bookings = [];
+      // Convert Booking objects to Map format expected by UI
+      _bookings = bookings
+          .map(
+            (booking) => {
+              'id': booking.id,
+              'pnr': booking.pnr,
+              'status': booking.status.toString().split('.').last,
+              'totalPrice': booking.totalPrice,
+              'currency': booking.currency,
+              'createdAt': booking.createdAt,
+              'passengers': booking.passengers.isNotEmpty
+                  ? booking.passengers.map((p) => p.toJson()).toList()
+                  : <Map<String, dynamic>>[],
+            },
+          )
+          .toList();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tìm kiếm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      _bookings = [];
+    }
 
     setState(() {
       _isLoading = false;

@@ -66,7 +66,8 @@ class AppRouter {
         name: 'tripDetail',
         builder: (context, state) {
           final tripId = state.pathParameters['tripId']!;
-          return TripDetailPage(tripId: tripId);
+          final extra = state.extra as Map<String, dynamic>?;
+          return TripDetailPage(tripId: tripId, schedule: extra?['schedule']);
         },
       ),
 
@@ -79,6 +80,8 @@ class AppRouter {
           return BookingPage(
             trip: extra?['trip'],
             selectedSeats: extra?['selectedSeats'],
+            selectedSeatData: extra?['selectedSeatData'],
+            selectedClass: extra?['selectedClass'],
           );
         },
       ),

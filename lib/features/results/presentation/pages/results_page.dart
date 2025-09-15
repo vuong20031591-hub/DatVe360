@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/i18n/l10n.dart';
 import '../../../search/presentation/providers/search_provider.dart';
@@ -270,13 +271,11 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
   }
 
   void _selectSchedule(Schedule schedule) {
-    // TODO: Navigate to booking page with selected schedule
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Chọn chuyến: ${schedule.operatorName} ${schedule.fromCode}-${schedule.toCode}',
-        ),
-      ),
+    // Navigate to trip detail page with schedule data
+    context.pushNamed(
+      'tripDetail',
+      pathParameters: {'tripId': schedule.id},
+      extra: {'schedule': schedule},
     );
   }
 }

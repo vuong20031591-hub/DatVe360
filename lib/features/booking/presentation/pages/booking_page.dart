@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../providers/booking_provider.dart';
 import '../wizard/step_review.dart';
 import '../wizard/step_passenger.dart';
 import '../wizard/step_payment.dart';
 
 class BookingPage extends ConsumerStatefulWidget {
-  const BookingPage({super.key, this.trip, this.selectedSeats});
+  const BookingPage({
+    super.key,
+    this.trip,
+    this.selectedSeats,
+    this.selectedSeatData,
+    this.selectedClass,
+  });
 
   final Map<String, dynamic>? trip;
   final List<String>? selectedSeats;
+  final List<dynamic>? selectedSeatData;
+  final String? selectedClass;
 
   @override
   ConsumerState<BookingPage> createState() => _BookingPageState();
@@ -38,6 +47,8 @@ class _BookingPageState extends ConsumerState<BookingPage> {
     _bookingData = {
       'trip': widget.trip,
       'selectedSeats': widget.selectedSeats ?? [],
+      'selectedSeatData': widget.selectedSeatData ?? [],
+      'selectedClass': widget.selectedClass,
       'passengers': <Map<String, dynamic>>[],
       'contactInfo': <String, dynamic>{},
       'paymentMethod': null,
@@ -249,11 +260,57 @@ class _BookingPageState extends ConsumerState<BookingPage> {
     }
   }
 
-  void _processPayment() {
-    // TODO: Process payment
+  void _processPayment() async {
+    if (_bookingData['trip'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Thông tin chuyến đi không hợp lệ')),
+      );
+      return;
+    }
+
+    // Show loading
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Đang xử lý thanh toán...')));
+
+    try {
+      // Create booking
+      final booking = await ref
+          .read(bookingProvider.notifier)
+          .createBooking(
+            scheduleId: _bookingData['trip']['id'],
+            passengers: _bookingData['passengers'] is List
+                ? List<Map<String, dynamic>>.from(_bookingData['passengers'])
+                : <Map<String, dynamic>>[],
+            selectedClass: _bookingData['selectedClass'] ?? 'economy',
+            selectedSeats: _bookingData['selectedSeats'] is List
+                ? List<String>.from(_bookingData['selectedSeats'])
+                : <String>[],
+            contactInfo: _bookingData['contactInfo'] is Map
+                ? Map<String, dynamic>.from(_bookingData['contactInfo'])
+                : <String, dynamic>{},
+            paymentMethod: _bookingData['paymentMethod'],
+          );
+
+      if (booking != null) {
+        _handlePaymentComplete(booking.pnr);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tạo booking thất bại. Vui lòng thử lại.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _handlePaymentComplete(String bookingId) {

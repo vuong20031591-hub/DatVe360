@@ -3,6 +3,7 @@ const { query, param, validationResult } = require('express-validator');
 const Schedule = require('../models/Schedule');
 const Route = require('../models/Route');
 const Destination = require('../models/Destination');
+const TransportOperator = require('../models/TransportOperator');
 const AuthMiddleware = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
@@ -282,7 +283,24 @@ router.get('/search',
         from: schedule.fromDest,
         to: schedule.toDest,
         transportType: schedule.route.transportType,
-        distance: schedule.route.distance
+        distance: schedule.route.distance,
+        // Add route timeline for frontend
+        timeline: [
+          {
+            type: 'departure',
+            time: schedule.departureTime.toISOString().substring(11, 16),
+            airport: schedule.route?.from?.name
+              ? `${schedule.route.from.name} (${schedule.route.from.code})`
+              : `${schedule.fromDest?.name || 'N/A'} (${schedule.fromDest?.code || 'N/A'})`,
+          },
+          {
+            type: 'arrival',
+            time: schedule.arrivalTime.toISOString().substring(11, 16),
+            airport: schedule.route?.to?.name
+              ? `${schedule.route.to.name} (${schedule.route.to.code})`
+              : `${schedule.toDest?.name || 'N/A'} (${schedule.toDest?.code || 'N/A'})`,
+          },
+        ]
       },
       operator: schedule.operator ? {
         id: schedule.operator._id,

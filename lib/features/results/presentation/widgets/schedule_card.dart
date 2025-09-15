@@ -72,7 +72,7 @@ class ScheduleCard extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          schedule.vehicleType,
+                          schedule.metadata['model'] ?? schedule.vehicleType,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),

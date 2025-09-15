@@ -5,6 +5,7 @@ class Schedule {
   final String operatorName;
   final String operatorLogo;
   final String routeId;
+  final String vehicleNumber;
   final String from;
   final String to;
   final String fromCode;
@@ -28,6 +29,7 @@ class Schedule {
     required this.operatorName,
     required this.operatorLogo,
     required this.routeId,
+    required this.vehicleNumber,
     required this.from,
     required this.to,
     required this.fromCode,
@@ -86,6 +88,7 @@ class Schedule {
       operatorName: operator['name'] as String? ?? '',
       operatorLogo: operator['logo'] as String? ?? '',
       routeId: route['id'] as String? ?? '',
+      vehicleNumber: json['vehicleNumber'] as String? ?? '',
       from: fromDestination['name'] as String? ?? '',
       to: toDestination['name'] as String? ?? '',
       fromCode: fromDestination['code'] as String? ?? '',
@@ -114,6 +117,7 @@ class Schedule {
       'operatorName': operatorName,
       'operatorLogo': operatorLogo,
       'routeId': routeId,
+      'vehicleNumber': vehicleNumber,
       'from': from,
       'to': to,
       'fromCode': fromCode,

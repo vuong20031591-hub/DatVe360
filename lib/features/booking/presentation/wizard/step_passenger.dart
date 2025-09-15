@@ -49,9 +49,10 @@ class _StepPassengerState extends State<StepPassenger> {
   }
 
   void _initializePassengers() {
-    final selectedSeats =
-        widget.bookingData['selectedSeats'] as List<String>? ?? [];
-    final passengerCount = selectedSeats.length;
+    final selectedSeats = widget.bookingData['selectedSeats'] is List
+        ? List<String>.from(widget.bookingData['selectedSeats'])
+        : <String>[];
+    final passengerCount = selectedSeats.isNotEmpty ? selectedSeats.length : 1;
 
     _passengerFormKeys.clear();
     _passengerControllers.clear();

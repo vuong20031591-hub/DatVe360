@@ -90,9 +90,8 @@ class _StepPaymentState extends State<StepPayment> {
 
                   const SizedBox(height: 16),
 
-                  _buildSummaryRow(theme, 'Giá vé', '1.200.000đ'),
-                  _buildSummaryRow(theme, 'Phí chọn ghế', '50.000đ'),
-                  _buildSummaryRow(theme, 'Thuế và phí', '180.000đ'),
+                  // Calculate real pricing
+                  ..._buildPricingRows(theme),
 
                   if (_selectedPaymentMethod != null)
                     _buildSummaryRow(
@@ -366,7 +365,19 @@ class _StepPaymentState extends State<StepPayment> {
   }
 
   int _getTotalAmount() {
-    return 1430000 + _getPaymentFee(); // Base amount + payment fee
+    final trip = widget.bookingData['trip'] as Map<String, dynamic>?;
+    final selectedClass = widget.bookingData['selectedClass'] as String?;
+    final selectedSeatData = widget.bookingData['selectedSeatData'] is List
+        ? List<dynamic>.from(widget.bookingData['selectedSeatData'])
+        : <dynamic>[];
+
+    if (trip == null) return _getPaymentFee();
+
+    final basePrice = _getBasePrice(trip, selectedClass);
+    final seatPrice = _getSeatPrice(selectedSeatData);
+    final taxPrice = (basePrice * 0.1).round();
+
+    return basePrice + seatPrice + taxPrice + _getPaymentFee();
   }
 
   String _formatPrice(int price) {
@@ -394,5 +405,58 @@ class _StepPaymentState extends State<StepPayment> {
 
     // Call completion callback
     widget.onPaymentComplete(bookingId);
+  }
+
+  List<Widget> _buildPricingRows(ThemeData theme) {
+    final trip = widget.bookingData['trip'] as Map<String, dynamic>?;
+    final selectedClass = widget.bookingData['selectedClass'] as String?;
+    final selectedSeatData = widget.bookingData['selectedSeatData'] is List
+        ? List<dynamic>.from(widget.bookingData['selectedSeatData'])
+        : <dynamic>[];
+
+    if (trip == null) {
+      return [_buildSummaryRow(theme, 'Giá vé', '0đ')];
+    }
+
+    final basePrice = _getBasePrice(trip, selectedClass);
+    final seatPrice = _getSeatPrice(selectedSeatData);
+    final taxPrice = (basePrice * 0.1).round();
+
+    return [
+      _buildSummaryRow(
+        theme,
+        'Giá vé ${selectedClass?.toUpperCase() ?? ''}',
+        '${_formatPrice(basePrice)}đ',
+      ),
+      if (seatPrice > 0)
+        _buildSummaryRow(theme, 'Phí chọn ghế', '${_formatPrice(seatPrice)}đ'),
+      _buildSummaryRow(theme, 'Thuế và phí', '${_formatPrice(taxPrice)}đ'),
+    ];
+  }
+
+  int _getBasePrice(Map<String, dynamic> trip, String? selectedClass) {
+    if (selectedClass == null) return trip['price']?.toInt() ?? 0;
+
+    final classes = trip['classes'] as List?;
+    if (classes == null) return trip['price']?.toInt() ?? 0;
+
+    try {
+      final classData = classes.firstWhere((c) => c['id'] == selectedClass);
+      return (classData['price'] as num?)?.toInt() ??
+          trip['price']?.toInt() ??
+          0;
+    } catch (e) {
+      return trip['price']?.toInt() ?? 0;
+    }
+  }
+
+  int _getSeatPrice(List<dynamic> selectedSeatData) {
+    int total = 0;
+    for (final seatData in selectedSeatData) {
+      if (seatData != null && seatData.priceAddon != null) {
+        total += (seatData.priceAddon as num).toInt();
+      }
+    }
+    return total;
   }
 }

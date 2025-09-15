@@ -16,7 +16,13 @@ class StepReview extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final trip = bookingData['trip'] as Map<String, dynamic>?;
-    final selectedSeats = bookingData['selectedSeats'] as List<String>? ?? [];
+    final selectedSeats = bookingData['selectedSeats'] is List
+        ? List<String>.from(bookingData['selectedSeats'])
+        : <String>[];
+    final selectedSeatData = bookingData['selectedSeatData'] is List
+        ? List<dynamic>.from(bookingData['selectedSeatData'])
+        : <dynamic>[];
+    final selectedClass = bookingData['selectedClass'] as String?;
 
     if (trip == null) {
       return const Center(child: Text('Không có thông tin chuyến'));
@@ -215,9 +221,13 @@ class StepReview extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  _buildPriceRow(theme, 'Giá vé cơ bản', '1.200.000đ'),
-                  _buildPriceRow(theme, 'Phí chọn ghế', '50.000đ'),
-                  _buildPriceRow(theme, 'Thuế và phí', '180.000đ'),
+                  // Calculate real pricing
+                  ..._buildPricingRows(
+                    theme,
+                    trip,
+                    selectedClass,
+                    selectedSeatData,
+                  ),
 
                   const Divider(height: 24),
 
@@ -231,7 +241,13 @@ class StepReview extends StatelessWidget {
                       ),
                       const Spacer(),
                       Text(
-                        '1.430.000đ',
+                        _formatPrice(
+                          _calculateTotalPrice(
+                            trip,
+                            selectedClass,
+                            selectedSeatData,
+                          ),
+                        ),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.lightSuccess,
@@ -354,5 +370,64 @@ class StepReview extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildPricingRows(
+    ThemeData theme,
+    Map<String, dynamic> trip,
+    String? selectedClass,
+    List<dynamic> selectedSeatData,
+  ) {
+    final basePrice = _getBasePrice(trip, selectedClass);
+    final seatPrice = _getSeatPrice(selectedSeatData);
+    final taxPrice = (basePrice * 0.1).round(); // 10% tax
+
+    return [
+      _buildPriceRow(theme, 'Giá vé cơ bản', _formatPrice(basePrice)),
+      if (seatPrice > 0)
+        _buildPriceRow(theme, 'Phí chọn ghế', _formatPrice(seatPrice)),
+      _buildPriceRow(theme, 'Thuế và phí', _formatPrice(taxPrice)),
+    ];
+  }
+
+  int _getBasePrice(Map<String, dynamic> trip, String? selectedClass) {
+    if (selectedClass == null) return trip['price']?.toInt() ?? 0;
+
+    final classes = trip['classes'] as List?;
+    if (classes == null) return trip['price']?.toInt() ?? 0;
+
+    try {
+      final classData = classes.firstWhere((c) => c['id'] == selectedClass);
+      return (classData['price'] as num?)?.toInt() ??
+          trip['price']?.toInt() ??
+          0;
+    } catch (e) {
+      return trip['price']?.toInt() ?? 0;
+    }
+  }
+
+  int _getSeatPrice(List<dynamic> selectedSeatData) {
+    int total = 0;
+    for (final seatData in selectedSeatData) {
+      if (seatData != null && seatData.priceAddon != null) {
+        total += (seatData.priceAddon as num).toInt();
+      }
+    }
+    return total;
+  }
+
+  int _calculateTotalPrice(
+    Map<String, dynamic> trip,
+    String? selectedClass,
+    List<dynamic> selectedSeatData,
+  ) {
+    final basePrice = _getBasePrice(trip, selectedClass);
+    final seatPrice = _getSeatPrice(selectedSeatData);
+    final taxPrice = (basePrice * 0.1).round();
+    return basePrice + seatPrice + taxPrice;
+  }
+
+  String _formatPrice(int price) {
+    return '${(price / 1000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}K VND';
   }
 }

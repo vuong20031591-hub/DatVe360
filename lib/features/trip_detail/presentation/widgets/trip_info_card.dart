@@ -3,10 +3,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class TripInfoCard extends StatelessWidget {
-  const TripInfoCard({
-    super.key,
-    required this.tripData,
-  });
+  const TripInfoCard({super.key, required this.tripData});
 
   final Map<String, dynamic> tripData;
 
@@ -23,11 +20,7 @@ class TripInfoCard extends StatelessWidget {
             // Header
             Row(
               children: [
-                Icon(
-                  Icons.flight,
-                  color: AppColors.flightColor,
-                  size: 24,
-                ),
+                Icon(Icons.flight, color: AppColors.flightColor, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'Thông tin chuyến bay',
@@ -37,14 +30,14 @@ class TripInfoCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Flight route timeline
             _buildRouteTimeline(theme),
-            
+
             const SizedBox(height: 24),
-            
+
             // Flight details
             _buildFlightDetails(theme),
           ],
@@ -54,14 +47,31 @@ class TripInfoCard extends StatelessWidget {
   }
 
   Widget _buildRouteTimeline(ThemeData theme) {
-    final route = tripData['route'] as List<Map<String, dynamic>>;
-    
+    // Use route timeline from API if available, otherwise fallback to basic route
+    final route =
+        tripData['route'] is Map && tripData['route']['timeline'] is List
+        ? List<Map<String, dynamic>>.from(tripData['route']['timeline'])
+        : tripData['route'] is List
+        ? List<Map<String, dynamic>>.from(tripData['route'])
+        : [
+            {
+              'type': 'departure',
+              'time': tripData['departTime'] ?? 'N/A',
+              'airport': '${tripData['from']} (${tripData['fromCode']})',
+            },
+            {
+              'type': 'arrival',
+              'time': tripData['arriveTime'] ?? 'N/A',
+              'airport': '${tripData['to']} (${tripData['toCode']})',
+            },
+          ];
+
     return Column(
       children: route.asMap().entries.map((entry) {
         final index = entry.key;
         final stop = entry.value;
         final isLast = index == route.length - 1;
-        
+
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -79,16 +89,12 @@ class TripInfoCard extends StatelessWidget {
                   ),
                 ),
                 if (!isLast)
-                  Container(
-                    width: 2,
-                    height: 40,
-                    color: theme.dividerColor,
-                  ),
+                  Container(width: 2, height: 40, color: theme.dividerColor),
               ],
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // Stop info
             Expanded(
               child: Column(
@@ -139,9 +145,9 @@ class TripInfoCard extends StatelessWidget {
           'Loại máy bay',
           tripData['aircraft'] ?? 'N/A',
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Flight number
         _buildDetailRow(
           theme,
@@ -149,9 +155,9 @@ class TripInfoCard extends StatelessWidget {
           'Số hiệu chuyến bay',
           '${tripData['carrier']} ${tripData['flightNumber']}',
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Duration
         _buildDetailRow(
           theme,
@@ -159,9 +165,9 @@ class TripInfoCard extends StatelessWidget {
           'Thời gian bay',
           tripData['duration'],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Additional info
         Container(
           padding: const EdgeInsets.all(12),
