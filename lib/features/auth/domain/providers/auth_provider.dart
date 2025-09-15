@@ -2,10 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/auth_state.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/real_auth_repository.dart';
 
 /// Auth repository provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return MockAuthRepository();
+  return RealAuthRepository.instance;
 });
 
 /// Auth state notifier
@@ -15,8 +16,18 @@ class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
     _authRepository = ref.read(authRepositoryProvider);
-    _checkAuthStatus();
+    _initializeAuth();
     return AuthState.initial();
+  }
+
+  /// Initialize authentication
+  Future<void> _initializeAuth() async {
+    // Initialize RealAuthRepository if needed
+    if (_authRepository is RealAuthRepository) {
+      final realRepo = _authRepository as RealAuthRepository;
+      await realRepo.initialize();
+    }
+    _checkAuthStatus();
   }
 
   /// Check current authentication status

@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 
 /// Service to monitor network connectivity
 class ConnectivityService {
   static ConnectivityService? _instance;
   bool _isOnline = true;
-  final StreamController<bool> _connectivityController = StreamController<bool>.broadcast();
+  final StreamController<bool> _connectivityController =
+      StreamController<bool>.broadcast();
 
   ConnectivityService._internal();
 
@@ -38,9 +38,6 @@ class ConnectivityService {
       _updateConnectivity(false);
       return false;
     } catch (e) {
-      if (kDebugMode) {
-        print('Connectivity check error: $e');
-      }
       _updateConnectivity(false);
       return false;
     }
@@ -58,10 +55,6 @@ class ConnectivityService {
     if (_isOnline != isConnected) {
       _isOnline = isConnected;
       _connectivityController.add(_isOnline);
-      
-      if (kDebugMode) {
-        print('Connectivity changed: ${_isOnline ? 'Online' : 'Offline'}');
-      }
     }
   }
 

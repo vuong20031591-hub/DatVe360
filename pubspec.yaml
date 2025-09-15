@@ -68,6 +68,5 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lottie/
-    - assets/data/
 
   generate: true

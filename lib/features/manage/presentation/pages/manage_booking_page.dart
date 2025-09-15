@@ -274,16 +274,14 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
     // Simulate API call
     await Future.delayed(const Duration(seconds: 2));
 
-    // Mock search result
-    final bookingId = _bookingIdController.text.toUpperCase();
-    final email = _emailController.text.toLowerCase();
+    // TODO: Replace with real API call
+    // final bookingId = _bookingIdController.text.toUpperCase();
+    // final email = _emailController.text.toLowerCase();
+    // final bookingRepository = BookingRepository(DioClient());
+    // _bookings = await bookingRepository.searchBookings(bookingId, email);
 
-    // Simulate finding booking
-    if (bookingId == 'DV360123' && email == 'test@example.com') {
-      _bookings = [_getMockBooking()];
-    } else {
-      _bookings = [];
-    }
+    // For now, return empty list
+    _bookings = [];
 
     setState(() {
       _isLoading = false;
@@ -325,28 +323,5 @@ class _ManageBookingPageState extends ConsumerState<ManageBookingPage> {
         ],
       ),
     );
-  }
-
-  Map<String, dynamic> _getMockBooking() {
-    return {
-      'id': 'DV360123',
-      'pnr': 'ABC123',
-      'status': 'confirmed',
-      'trip': {
-        'carrier': 'Vietnam Airlines',
-        'flightNumber': 'VN210',
-        'from': 'Hà Nội',
-        'to': 'TP.HCM',
-        'departTime': '06:00',
-        'arriveTime': '08:15',
-        'departDate': DateTime.now().add(const Duration(days: 7)),
-      },
-      'passengers': [
-        {'name': 'Nguyễn Văn A', 'type': 'adult'},
-      ],
-      'seats': ['12A'],
-      'totalPrice': 1200000,
-      'createdAt': DateTime.now().subtract(const Duration(days: 1)),
-    };
   }
 }

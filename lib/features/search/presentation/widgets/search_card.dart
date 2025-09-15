@@ -349,16 +349,46 @@ class _SearchCardState extends ConsumerState<SearchCard> {
   }
 
   void _showLocationPicker(bool isFrom) {
-    // TODO: Implement location picker
+    final locations = [
+      {'code': 'HAN', 'name': 'Hà Nội', 'fullName': 'Hà Nội (HAN)'},
+      {'code': 'SGN', 'name': 'TP.HCM', 'fullName': 'TP. Hồ Chí Minh (SGN)'},
+      {'code': 'DAD', 'name': 'Đà Nẵng', 'fullName': 'Đà Nẵng (DAD)'},
+      {'code': 'CXR', 'name': 'Nha Trang', 'fullName': 'Nha Trang (CXR)'},
+      {'code': 'DLI', 'name': 'Đà Lạt', 'fullName': 'Đà Lạt (DLI)'},
+      {'code': 'PQC', 'name': 'Phú Quốc', 'fullName': 'Phú Quốc (PQC)'},
+      {'code': 'VCA', 'name': 'Cần Thơ', 'fullName': 'Cần Thơ (VCA)'},
+      {'code': 'HPH', 'name': 'Hải Phòng', 'fullName': 'Hải Phòng (HPH)'},
+    ];
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(isFrom ? 'Chọn điểm đi' : 'Chọn điểm đến'),
-        content: const Text('Tính năng chọn địa điểm sẽ được cập nhật sau.'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: locations.length,
+            itemBuilder: (context, index) {
+              final location = locations[index];
+              return ListTile(
+                title: Text(location['fullName']!),
+                onTap: () {
+                  if (isFrom) {
+                    _fromController.text = location['fullName']!;
+                  } else {
+                    _toController.text = location['fullName']!;
+                  }
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
+            child: const Text('Hủy'),
           ),
         ],
       ),
@@ -396,26 +426,196 @@ class _SearchCardState extends ConsumerState<SearchCard> {
   }
 
   void _showPassengerPicker() {
-    // TODO: Implement passenger picker
+    int tempAdults = _adults;
+    int tempChildren = _children;
+    int tempInfants = _infants;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Chọn số lượng hành khách'),
-        content: const Text('Tính năng chọn hành khách sẽ được cập nhật sau.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Chọn số lượng hành khách'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Adults
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Người lớn',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          'Từ 12 tuổi trở lên',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: tempAdults > 1
+                            ? () => setState(() => tempAdults--)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text(
+                        '$tempAdults',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: (tempAdults + tempChildren + tempInfants) < 9
+                            ? () => setState(() => tempAdults++)
+                            : null,
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Children
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Trẻ em',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          'Từ 2-11 tuổi',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: tempChildren > 0
+                            ? () => setState(() => tempChildren--)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text(
+                        '$tempChildren',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: (tempAdults + tempChildren + tempInfants) < 9
+                            ? () => setState(() => tempChildren++)
+                            : null,
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Infants
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Em bé',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          'Dưới 2 tuổi',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: tempInfants > 0
+                            ? () => setState(() => tempInfants--)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text(
+                        '$tempInfants',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed:
+                            tempInfants < tempAdults &&
+                                (tempAdults + tempChildren + tempInfants) < 9
+                            ? () => setState(() => tempInfants++)
+                            : null,
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+              Text(
+                'Tối đa 9 hành khách. Em bé không được vượt quá số người lớn.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            TextButton(
+              onPressed: () {
+                this.setState(() {
+                  _adults = tempAdults;
+                  _children = tempChildren;
+                  _infants = tempInfants;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Xác nhận'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   void _handleSearch() {
-    if (!_formKey.currentState!.validate()) return;
+    print('DEBUG: _handleSearch called');
+
+    if (!_formKey.currentState!.validate()) {
+      print('DEBUG: Form validation failed');
+      return;
+    }
 
     if (_departDate == null) {
+      print('DEBUG: Depart date is null');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày đi')));
@@ -423,6 +623,7 @@ class _SearchCardState extends ConsumerState<SearchCard> {
     }
 
     if (_isRoundTrip && _returnDate == null) {
+      print('DEBUG: Round trip but return date is null');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày về')));
@@ -441,6 +642,7 @@ class _SearchCardState extends ConsumerState<SearchCard> {
       'infants': _infants,
     };
 
+    print('DEBUG: Search data: $searchData');
     widget.onSearch(searchData);
   }
 }

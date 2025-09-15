@@ -52,6 +52,7 @@ backend/logs/
 backend/dist/
 backend/.nyc_output/
 backend/coverage/
+backend/data/
 
 # Custom exclusions
 .cunzhi-memory/

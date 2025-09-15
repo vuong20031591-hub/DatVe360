@@ -1,15 +1,14 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../../core/services/api_service.dart';
 import '../../../../core/storage/storage_service.dart';
 import '../models/user.dart';
+import 'auth_repository.dart';
 
 /// Real authentication repository that connects to Backend API
-class RealAuthRepository {
+class RealAuthRepository implements AuthRepository {
   static RealAuthRepository? _instance;
   late ApiService _apiService;
   late StorageService _storage;
-  
+
   User? _currentUser;
 
   RealAuthRepository._internal() {
@@ -47,6 +46,7 @@ class RealAuthRepository {
   }
 
   /// Login with email and password
+  @override
   Future<AuthResponse> login(LoginRequest request) async {
     try {
       final response = await _apiService.login(
@@ -58,23 +58,21 @@ class RealAuthRepository {
       if (response['success'] == true && response['data'] != null) {
         final authResponse = AuthResponse.fromJson(response);
         _currentUser = authResponse.user;
-        
+
         // Store user data locally for offline access
         await _storage.write('current_user', authResponse.user.toJson());
-        
+
         return authResponse;
       } else {
         throw Exception(response['message'] ?? 'Đăng nhập thất bại');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Login error: $e');
-      }
       throw Exception(_apiService.getErrorMessage(e));
     }
   }
 
   /// Register new user
+  @override
   Future<AuthResponse> register(RegisterRequest request) async {
     try {
       final response = await _apiService.register(
@@ -87,30 +85,26 @@ class RealAuthRepository {
       if (response['success'] == true && response['data'] != null) {
         final authResponse = AuthResponse.fromJson(response);
         _currentUser = authResponse.user;
-        
+
         // Store user data locally for offline access
         await _storage.write('current_user', authResponse.user.toJson());
-        
+
         return authResponse;
       } else {
         throw Exception(response['message'] ?? 'Đăng ký thất bại');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Register error: $e');
-      }
       throw Exception(_apiService.getErrorMessage(e));
     }
   }
 
   /// Logout user
+  @override
   Future<void> logout() async {
     try {
       await _apiService.logout();
     } catch (e) {
-      if (kDebugMode) {
-        print('Logout error: $e');
-      }
+      // Ignore logout errors
     } finally {
       _currentUser = null;
       await _storage.delete('current_user');
@@ -118,7 +112,8 @@ class RealAuthRepository {
   }
 
   /// Refresh authentication token
-  Future<AuthResponse?> refreshToken() async {
+  @override
+  Future<AuthResponse?> refreshToken(String refreshToken) async {
     try {
       final success = await _apiService.refreshToken();
       if (success) {
@@ -127,42 +122,36 @@ class RealAuthRepository {
         if (response['success'] == true && response['data'] != null) {
           _currentUser = User.fromJson(response['data']['user']);
           await _storage.write('current_user', _currentUser!.toJson());
-          
+
           // Create a mock AuthResponse for refresh
           return AuthResponse(
             user: _currentUser!,
             accessToken: await _apiService.getAuthToken() ?? '',
-            refreshToken: await _storage.read('refresh_token') ?? '',
+            refreshToken: _storage.read('refresh_token') ?? '',
             expiresIn: '7d',
           );
         }
       }
       return null;
     } catch (e) {
-      if (kDebugMode) {
-        print('Refresh token error: $e');
-      }
       await logout();
       return null;
     }
   }
 
   /// Update user profile
-  Future<User> updateProfile(Map<String, dynamic> data) async {
+  @override
+  Future<void> updateProfile(User user) async {
     try {
-      final response = await _apiService.updateProfile(data);
-      
+      final response = await _apiService.updateProfile(user.toJson());
+
       if (response['success'] == true && response['data'] != null) {
         _currentUser = User.fromJson(response['data']['user']);
         await _storage.write('current_user', _currentUser!.toJson());
-        return _currentUser!;
       } else {
         throw Exception(response['message'] ?? 'Cập nhật thông tin thất bại');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Update profile error: $e');
-      }
       throw Exception(_apiService.getErrorMessage(e));
     }
   }
@@ -177,16 +166,38 @@ class RealAuthRepository {
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
-      
+
       if (response['success'] != true) {
         throw Exception(response['message'] ?? 'Đổi mật khẩu thất bại');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Change password error: $e');
-      }
       throw Exception(_apiService.getErrorMessage(e));
     }
+  }
+
+  /// Get current authenticated user
+  @override
+  Future<User?> getCurrentUser() async {
+    if (_currentUser != null) {
+      return _currentUser;
+    }
+
+    // Try to get from storage
+    return await getUserFromStorage();
+  }
+
+  /// Forgot password
+  @override
+  Future<void> forgotPassword(String email) async {
+    // TODO: Implement forgot password API call
+    throw UnimplementedError('Forgot password not implemented yet');
+  }
+
+  /// Reset password
+  @override
+  Future<void> resetPassword(String token, String newPassword) async {
+    // TODO: Implement reset password API call
+    throw UnimplementedError('Reset password not implemented yet');
   }
 
   /// Get user from local storage (for offline access)
@@ -198,9 +209,6 @@ class RealAuthRepository {
       }
       return null;
     } catch (e) {
-      if (kDebugMode) {
-        print('Get user from storage error: $e');
-      }
       return null;
     }
   }

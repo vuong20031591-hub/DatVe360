@@ -32,7 +32,9 @@ class User {
       displayName: json['displayName'] as String,
       avatar: json['avatar'] as String?,
       role: json['role'] as String? ?? 'user',
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
       lastLoginAt: json['lastLoginAt'] != null
           ? DateTime.parse(json['lastLoginAt'] as String)
           : null,

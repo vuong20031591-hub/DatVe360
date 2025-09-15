@@ -48,10 +48,7 @@ class AppRouter {
           GoRoute(
             path: '/results',
             name: 'results',
-            builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>?;
-              return ResultsPage(searchQuery: extra?['searchQuery']);
-            },
+            builder: (context, state) => const ResultsPage(),
           ),
 
           // Profile page
@@ -206,11 +203,38 @@ class _MainShellState extends ConsumerState<MainShell>
     super.dispose();
   }
 
+  /// Get bottom navigation index from current location
+  int _getIndexFromLocation(String location) {
+    switch (location) {
+      case '/':
+        return 0; // Home/Search
+      case '/results':
+        return 1; // Results
+      case '/profile':
+        return 2; // Profile
+      default:
+        return 0; // Default to Home
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = ref.watch(localeProvider);
     final localizations = ref.watch(localizationsProvider(locale));
+
+    // Sync bottom navigation with current route
+    final currentLocation = GoRouterState.of(context).uri.path;
+    final currentIndex = _getIndexFromLocation(currentLocation);
+    if (_currentIndex != currentIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _currentIndex = currentIndex;
+          });
+        }
+      });
+    }
 
     return Scaffold(
       body: OfflineBanner(child: widget.child),

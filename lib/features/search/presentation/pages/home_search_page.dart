@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/i18n/l10n.dart' as l10n;
+
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
+import '../../../../core/services/search_history_service.dart';
 import '../../../../shared/widgets/offline_banner.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../widgets/search_card.dart';
 import '../widgets/transport_mode_tabs.dart';
 import '../widgets/destination_card.dart';
+import '../providers/search_provider.dart';
+import '../../data/models/search_query.dart';
 
 class HomeSearchPage extends ConsumerStatefulWidget {
   const HomeSearchPage({super.key});
@@ -359,40 +363,188 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
           ),
         ),
         const SizedBox(height: 16),
-        // TODO: Implement recent searches from provider
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.history,
-                size: 48,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                localizations.noRecentSearches,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildRecentSearchesList(theme, localizations),
       ],
     );
   }
 
   void _handleSearch(Map<String, dynamic> searchData) {
-    // TODO: Navigate to results page with search data
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tìm kiếm: ${searchData.toString()}')),
+    print('DEBUG: HomeSearchPage._handleSearch called with: $searchData');
+
+    // Create SearchQuery from form data
+    final query = SearchQuery(
+      mode: searchData['mode'] as TransportMode,
+      from: searchData['from'] as String,
+      to: searchData['to'] as String,
+      departDate: searchData['departDate'] as DateTime,
+      returnDate: searchData['returnDate'] as DateTime?,
+      passengers: PassengerCount(
+        adult: searchData['adults'] as int,
+        child: searchData['children'] as int,
+        infant: searchData['infants'] as int,
+      ),
+      roundTrip: searchData['isRoundTrip'] as bool,
     );
+
+    print('DEBUG: Created SearchQuery: $query');
+
+    // Perform search
+    ref.read(searchProvider.notifier).searchSchedules(query);
+    print('DEBUG: Called searchSchedules');
+
+    // Navigate to results page (search already triggered)
+    context.go('/results');
+    print('DEBUG: Navigated to results page');
+  }
+
+  Widget _buildRecentSearchesList(
+    ThemeData theme,
+    AppLocalizations localizations,
+  ) {
+    final recentSearches = SearchHistoryService.instance
+        .getFormattedSearchHistory();
+
+    if (recentSearches.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.history,
+              size: 48,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Chưa có tìm kiếm gần đây',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show only first 3 recent searches on homepage
+    final displaySearches = recentSearches.take(3).toList();
+
+    return Column(
+      children: [
+        ...displaySearches.map(
+          (search) => _buildRecentSearchItem(search, theme),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () {
+            // Navigate to search history page
+            context.go('/search-history');
+          },
+          child: const Text('Xem tất cả'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentSearchItem(Map<String, dynamic> search, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () => _repeatSearch(search),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _getTransportIcon(search['mode']),
+                color: _getTransportColor(search['mode']),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${search['from']} → ${search['to']}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '${search['date']} • ${search['passengers']} hành khách',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                search['searchTime'],
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _repeatSearch(Map<String, dynamic> search) {
+    // Convert history item back to SearchQuery and perform search
+    final searchQuery = SearchHistoryService.instance.historyItemToSearchQuery(
+      search,
+    );
+    ref.read(searchProvider.notifier).searchSchedules(searchQuery);
+
+    // Navigate to results page
+    context.go('/results');
+  }
+
+  IconData _getTransportIcon(String mode) {
+    switch (mode) {
+      case 'flight':
+        return Icons.flight;
+      case 'train':
+        return Icons.train;
+      case 'bus':
+        return Icons.directions_bus;
+      case 'ferry':
+        return Icons.directions_boat;
+      default:
+        return Icons.search;
+    }
+  }
+
+  Color _getTransportColor(String mode) {
+    switch (mode) {
+      case 'flight':
+        return AppColors.flightColor;
+      case 'train':
+        return AppColors.trainColor;
+      case 'bus':
+        return AppColors.busColor;
+      case 'ferry':
+        return AppColors.ferryColor;
+      default:
+        return Colors.grey;
+    }
   }
 
   void _selectDestination(Map<String, String> destination) {

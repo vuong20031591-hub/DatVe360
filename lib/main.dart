@@ -12,9 +12,11 @@ import 'core/providers/locale_provider.dart' as locale_providers;
 import 'core/services/settings_service.dart';
 import 'core/services/cache_service.dart';
 import 'core/services/connectivity_service.dart';
+import 'core/services/search_history_service.dart';
 import 'core/storage/storage_service.dart';
 import 'core/constants/app_constants.dart';
 import 'core/i18n/l10n.dart' as app_l10n;
+import 'features/auth/data/repositories/real_auth_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,12 @@ void main() async {
   final settingsService = SettingsService();
   await settingsService.init();
 
+  // Initialize StorageService
+  await StorageService.instance.init();
+
+  // Initialize RealAuthRepository for auto-login
+  await RealAuthRepository.instance.initialize();
+
   // Initialize Cache Service
   final cacheService = CacheService.instance;
   await cacheService.init();
@@ -40,6 +48,9 @@ void main() async {
   // Initialize Connectivity Service
   final connectivityService = ConnectivityService.instance;
   await connectivityService.init();
+
+  // Initialize Search History Service
+  await SearchHistoryService.instance.init();
 
   // Initialize Storage Service
   final storageService = StorageService.instance;

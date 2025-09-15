@@ -71,13 +71,22 @@ class CacheService {
     final jsonData = _searchCacheBox.get(searchKey);
     if (jsonData == null) return null;
 
-    final cacheItem = CacheItem.fromJson(jsonData);
-    if (cacheItem.isExpired) {
+    try {
+      final cacheItem = CacheItem.fromJson(Map<String, dynamic>.from(jsonData));
+      if (cacheItem.isExpired) {
+        _searchCacheBox.delete(searchKey);
+        return null;
+      }
+
+      if (cacheItem.data is List) {
+        return List<Map<String, dynamic>>.from(cacheItem.data);
+      }
+      return null;
+    } catch (e) {
+      // If parsing fails, delete the corrupted cache
       _searchCacheBox.delete(searchKey);
       return null;
     }
-
-    return List<Map<String, dynamic>>.from(cacheItem.data);
   }
 
   /// Destinations cache methods
@@ -97,13 +106,22 @@ class CacheService {
     final jsonData = _destinationsCacheBox.get('popular_destinations');
     if (jsonData == null) return null;
 
-    final cacheItem = CacheItem.fromJson(jsonData);
-    if (cacheItem.isExpired) {
+    try {
+      final cacheItem = CacheItem.fromJson(Map<String, dynamic>.from(jsonData));
+      if (cacheItem.isExpired) {
+        _destinationsCacheBox.delete('popular_destinations');
+        return null;
+      }
+
+      if (cacheItem.data is List) {
+        return List<Map<String, dynamic>>.from(cacheItem.data);
+      }
+      return null;
+    } catch (e) {
+      // If parsing fails, delete the corrupted cache
       _destinationsCacheBox.delete('popular_destinations');
       return null;
     }
-
-    return List<Map<String, dynamic>>.from(cacheItem.data);
   }
 
   /// Airports cache methods
@@ -121,13 +139,22 @@ class CacheService {
     final jsonData = _airportsCacheBox.get('airports');
     if (jsonData == null) return null;
 
-    final cacheItem = CacheItem.fromJson(jsonData);
-    if (cacheItem.isExpired) {
+    try {
+      final cacheItem = CacheItem.fromJson(Map<String, dynamic>.from(jsonData));
+      if (cacheItem.isExpired) {
+        _airportsCacheBox.delete('airports');
+        return null;
+      }
+
+      if (cacheItem.data is List) {
+        return List<Map<String, dynamic>>.from(cacheItem.data);
+      }
+      return null;
+    } catch (e) {
+      // If parsing fails, delete the corrupted cache
       _airportsCacheBox.delete('airports');
       return null;
     }
-
-    return List<Map<String, dynamic>>.from(cacheItem.data);
   }
 
   /// Utility methods
@@ -162,8 +189,15 @@ class CacheService {
     for (final key in box.keys) {
       final jsonData = box.get(key);
       if (jsonData != null) {
-        final cacheItem = CacheItem.fromJson(jsonData);
-        if (cacheItem.isExpired) {
+        try {
+          final cacheItem = CacheItem.fromJson(
+            Map<String, dynamic>.from(jsonData),
+          );
+          if (cacheItem.isExpired) {
+            keysToDelete.add(key.toString());
+          }
+        } catch (e) {
+          // If parsing fails, mark for deletion
           keysToDelete.add(key.toString());
         }
       }

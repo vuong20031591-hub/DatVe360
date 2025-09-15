@@ -25,8 +25,8 @@ const registerValidation = [
     .withMessage('Tên hiển thị phải có ít nhất 2 ký tự'),
   body('phoneNumber')
     .optional()
-    .isMobilePhone('vi-VN')
-    .withMessage('Số điện thoại không hợp lệ')
+    .matches(/^(\+84|84|0)[1-9][0-9]{8}$/)
+    .withMessage('Số điện thoại không hợp lệ (VD: 0123456789, +84123456789)')
 ];
 
 const loginValidation = [

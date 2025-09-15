@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/locale_provider.dart';
+import '../../../../core/services/search_history_service.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../results/data/models/trip.dart';
+import '../providers/search_provider.dart';
 
 class SearchHistoryPage extends ConsumerStatefulWidget {
   const SearchHistoryPage({super.key});
@@ -216,33 +219,7 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
   }
 
   List<Map<String, dynamic>> _getSearchHistory() {
-    // TODO: Get from provider/repository
-    return [
-      {
-        'from': 'Hà Nội',
-        'to': 'Hồ Chí Minh',
-        'mode': 'flight',
-        'date': '15/12/2024',
-        'passengers': 2,
-        'searchTime': '2 giờ trước',
-      },
-      {
-        'from': 'Đà Nẵng',
-        'to': 'Nha Trang',
-        'mode': 'train',
-        'date': '20/12/2024',
-        'passengers': 1,
-        'searchTime': '1 ngày trước',
-      },
-      {
-        'from': 'Hà Nội',
-        'to': 'Hải Phòng',
-        'mode': 'bus',
-        'date': '18/12/2024',
-        'passengers': 3,
-        'searchTime': '3 ngày trước',
-      },
-    ];
+    return SearchHistoryService.instance.getFormattedSearchHistory();
   }
 
   IconData _getTransportIcon(String mode) {
@@ -276,27 +253,23 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
   }
 
   void _repeatSearch(Map<String, dynamic> search) {
-    // TODO: Navigate to search with pre-filled data
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Tìm kiếm lại: ${search['from']} → ${search['to']}'),
-      ),
+    // Convert history item back to SearchQuery and perform search
+    final searchQuery = SearchHistoryService.instance.historyItemToSearchQuery(
+      search,
     );
+    ref.read(searchProvider.notifier).searchSchedules(searchQuery);
+
+    // Navigate to results page
+    context.go('/results');
   }
 
   void _removeSearchHistory(Map<String, dynamic> search) {
-    // TODO: Remove from provider/repository
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã xóa lịch sử tìm kiếm'),
-        action: SnackBarAction(
-          label: 'Hoàn tác',
-          onPressed: () {
-            // TODO: Restore search history
-          },
-        ),
-      ),
-    );
+    SearchHistoryService.instance.removeSearchFromHistory(search);
+    setState(() {}); // Refresh the UI
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đã xóa lịch sử tìm kiếm')));
   }
 
   void _clearAllHistory() {
@@ -315,7 +288,8 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Clear all history from provider/repository
+              SearchHistoryService.instance.clearHistory();
+              setState(() {}); // Refresh the UI
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Đã xóa tất cả lịch sử tìm kiếm')),
               );

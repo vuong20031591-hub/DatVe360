@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, param, validationResult } = require('express-validator');
 const Schedule = require('../models/Schedule');
-// const Route = require('../models/Route'); // Commented out - model doesn't exist
+const Route = require('../models/Route');
 const Destination = require('../models/Destination');
 const AuthMiddleware = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../middleware/errorHandler');
@@ -17,6 +17,9 @@ const checkValidation = (req, res, next) => {
   }
   next();
 };
+
+
+
 
 // @route   GET /api/v1/schedules/search
 // @desc    Search schedules
@@ -67,19 +70,33 @@ router.get('/search',
     //   }
     // }
 
-    // Find destinations
+    // Helper function to extract code from string like "TP. Hồ Chí Minh (SGN)"
+    const extractCode = (str) => {
+      const match = str.match(/\(([A-Z]{3})\)/);
+      return match ? match[1] : str;
+    };
+
+    // Find destinations with improved search
     const [fromDestination, toDestination] = await Promise.all([
       Destination.findOne({
         $or: [
           { code: from.toUpperCase() },
-          { name: new RegExp(from, 'i') }
+          { code: extractCode(from).toUpperCase() },
+          { name: new RegExp(from, 'i') },
+          { city: new RegExp(from, 'i') },
+          { fullName: new RegExp(from, 'i') },
+          { displayName: new RegExp(from, 'i') }
         ],
         active: true
       }),
       Destination.findOne({
         $or: [
           { code: to.toUpperCase() },
-          { name: new RegExp(to, 'i') }
+          { code: extractCode(to).toUpperCase() },
+          { name: new RegExp(to, 'i') },
+          { city: new RegExp(to, 'i') },
+          { fullName: new RegExp(to, 'i') },
+          { displayName: new RegExp(to, 'i') }
         ],
         active: true
       })
@@ -137,7 +154,10 @@ router.get('/search',
         $unwind: '$toDest'
       },
       {
-        $unwind: '$operator'
+        $unwind: {
+          path: '$operator',
+          preserveNullAndEmptyArrays: true
+        }
       },
       {
         $match: {
@@ -145,22 +165,27 @@ router.get('/search',
           status: { $in: ['scheduled', 'delayed'] },
           'route.fromDestination': fromDestination._id,
           'route.toDestination': toDestination._id,
-          'seatConfiguration.availableSeats': { $gte: parseInt(passengers) },
-          departureTime: { $gte: new Date() }
+          'seatConfiguration.availableSeats': { $gte: parseInt(passengers) }
         }
       }
     ];
 
     // Add date filter
     if (departureDate) {
-      const startDate = new Date(departureDate);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(departureDate);
-      endDate.setHours(23, 59, 59, 999);
+      // Parse date in Vietnam timezone (GMT+7)
+      const startDate = new Date(departureDate + 'T00:00:00+07:00');
+      const endDate = new Date(departureDate + 'T23:59:59+07:00');
 
       pipeline.push({
         $match: {
           departureTime: { $gte: startDate, $lte: endDate }
+        }
+      });
+    } else {
+      // If no specific date, only show future flights
+      pipeline.push({
+        $match: {
+          departureTime: { $gte: new Date() }
         }
       });
     }
@@ -259,12 +284,12 @@ router.get('/search',
         transportType: schedule.route.transportType,
         distance: schedule.route.distance
       },
-      operator: {
+      operator: schedule.operator ? {
         id: schedule.operator._id,
         name: schedule.operator.name,
         logo: schedule.operator.logo,
         type: schedule.operator.type
-      },
+      } : null,
       vehicle: schedule.vehicle,
       gate: schedule.gate,
       terminal: schedule.terminal,
@@ -446,6 +471,20 @@ router.get('/popular-routes',
   })
 );
 
+// @route   GET /api/v1/schedules/delayed
+// @desc    Get delayed schedules
+// @access  Public
+router.get('/delayed',
+  asyncHandler(async (req, res) => {
+    const delayedSchedules = await Schedule.findDelayed();
+
+    res.json({
+      success: true,
+      data: delayedSchedules
+    });
+  })
+);
+
 // @route   GET /api/v1/schedules/:id
 // @desc    Get schedule by ID
 // @access  Public
@@ -574,23 +613,6 @@ router.get('/operator/:operatorId',
         schedules,
         operatorId,
         count: schedules.length
-      }
-    });
-  })
-);
-
-// @route   GET /api/v1/schedules/delayed
-// @desc    Get delayed schedules
-// @access  Public
-router.get('/delayed',
-  asyncHandler(async (req, res) => {
-    const delayedSchedules = await Schedule.findDelayed();
-
-    res.json({
-      success: true,
-      data: {
-        schedules: delayedSchedules,
-        count: delayedSchedules.length
       }
     });
   })

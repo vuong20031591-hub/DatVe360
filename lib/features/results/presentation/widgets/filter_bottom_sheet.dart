@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/widgets/app_button.dart';
 
 class FilterBottomSheet extends StatefulWidget {
@@ -19,9 +18,9 @@ class FilterBottomSheet extends StatefulWidget {
 class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late Map<String, dynamic> _filters;
   RangeValues _priceRange = const RangeValues(500000, 2000000);
-  TimeOfDay? _departureStart;
-  TimeOfDay? _departureEnd;
-  Set<String> _selectedCarriers = {};
+  Set<String> _selectedTimeSlots = {};
+  Set<String> _selectedOperators = {};
+  double _maxDuration = 12.0; // hours
   bool _directFlightsOnly = false;
 
   @override
@@ -36,16 +35,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       _filters['minPrice']?.toDouble() ?? 500000,
       _filters['maxPrice']?.toDouble() ?? 2000000,
     );
-    
-    if (_filters['departureStart'] != null) {
-      _departureStart = TimeOfDay.fromDateTime(_filters['departureStart']);
-    }
-    
-    if (_filters['departureEnd'] != null) {
-      _departureEnd = TimeOfDay.fromDateTime(_filters['departureEnd']);
-    }
-    
-    _selectedCarriers = Set.from(_filters['carriers'] ?? []);
+
+    _selectedTimeSlots = Set.from(_filters['departureTime'] ?? []);
+    _selectedOperators = Set.from(_filters['operators'] ?? []);
+    _maxDuration = _filters['maxDuration']?.toDouble() ?? 12.0;
     _directFlightsOnly = _filters['directFlightsOnly'] ?? false;
   }
 
@@ -58,9 +51,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       height: mediaQuery.size.height * 0.8,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -74,7 +65,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -94,9 +85,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               ],
             ),
           ),
-          
+
           const Divider(),
-          
+
           // Filter content
           Expanded(
             child: SingleChildScrollView(
@@ -106,33 +97,36 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 children: [
                   // Price range
                   _buildPriceFilter(theme),
-                  
+
                   const SizedBox(height: 24),
-                  
-                  // Departure time
-                  _buildDepartureTimeFilter(theme),
-                  
+
+                  // Departure time slots
+                  _buildTimeSlotFilter(theme),
+
                   const SizedBox(height: 24),
-                  
-                  // Carriers
-                  _buildCarrierFilter(theme),
-                  
+
+                  // Duration filter
+                  _buildDurationFilter(theme),
+
                   const SizedBox(height: 24),
-                  
+
+                  // Operators
+                  _buildOperatorFilter(theme),
+
+                  const SizedBox(height: 24),
+
                   // Direct flights
                   _buildDirectFlightsFilter(theme),
                 ],
               ),
             ),
           ),
-          
+
           // Actions
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: theme.dividerColor),
-              ),
+              border: Border(top: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
@@ -145,10 +139,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: AppButton(
-                    onPressed: _applyFilters,
-                    text: 'Áp dụng',
-                  ),
+                  child: AppButton(onPressed: _applyFilters, text: 'Áp dụng'),
                 ),
               ],
             ),
@@ -205,7 +196,26 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     );
   }
 
-  Widget _buildDepartureTimeFilter(ThemeData theme) {
+  Widget _buildTimeSlotFilter(ThemeData theme) {
+    final timeSlots = [
+      {
+        'key': 'morning',
+        'label': 'Sáng (6:00 - 12:00)',
+        'icon': Icons.wb_sunny,
+      },
+      {
+        'key': 'afternoon',
+        'label': 'Chiều (12:00 - 18:00)',
+        'icon': Icons.wb_sunny_outlined,
+      },
+      {
+        'key': 'evening',
+        'label': 'Tối (18:00 - 24:00)',
+        'icon': Icons.nights_stay_outlined,
+      },
+      {'key': 'night', 'label': 'Đêm (0:00 - 6:00)', 'icon': Icons.nights_stay},
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,23 +226,76 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
         ),
         const SizedBox(height: 16),
+        ...timeSlots.map((slot) {
+          return CheckboxListTile(
+            title: Row(
+              children: [
+                Icon(slot['icon'] as IconData, size: 20),
+                const SizedBox(width: 8),
+                Text(slot['label'] as String),
+              ],
+            ),
+            value: _selectedTimeSlots.contains(slot['key']),
+            onChanged: (value) {
+              setState(() {
+                if (value == true) {
+                  _selectedTimeSlots.add(slot['key'] as String);
+                } else {
+                  _selectedTimeSlots.remove(slot['key']);
+                }
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildDurationFilter(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Thời gian bay tối đa',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Slider(
+          value: _maxDuration,
+          min: 1.0,
+          max: 24.0,
+          divisions: 23,
+          label: '${_maxDuration.toInt()}h',
+          onChanged: (value) {
+            setState(() {
+              _maxDuration = value;
+            });
+          },
+        ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: _buildTimeSelector(
-                'Từ',
-                _departureStart,
-                (time) => setState(() => _departureStart = time),
-                theme,
+            Text(
+              '1h',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildTimeSelector(
-                'Đến',
-                _departureEnd,
-                (time) => setState(() => _departureEnd = time),
-                theme,
+            Text(
+              '${_maxDuration.toInt()}h',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            Text(
+              '24h',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -241,49 +304,14 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     );
   }
 
-  Widget _buildTimeSelector(
-    String label,
-    TimeOfDay? time,
-    Function(TimeOfDay?) onChanged,
-    ThemeData theme,
-  ) {
-    return InkWell(
-      onTap: () async {
-        final selectedTime = await showTimePicker(
-          context: context,
-          initialTime: time ?? TimeOfDay.now(),
-        );
-        onChanged(selectedTime);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              time?.format(context) ?? 'Chọn giờ',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildOperatorFilter(ThemeData theme) {
+    final operators = [
+      'Vietnam Airlines',
+      'VietJet Air',
+      'Bamboo Airways',
+      'Pacific Airlines',
+    ];
 
-  Widget _buildCarrierFilter(ThemeData theme) {
-    final carriers = ['Vietnam Airlines', 'VietJet Air', 'Bamboo Airways', 'Pacific Airlines'];
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -294,23 +322,23 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
         ),
         const SizedBox(height: 16),
-        ...carriers.map((carrier) {
+        ...operators.map((operator) {
           return CheckboxListTile(
-            title: Text(carrier),
-            value: _selectedCarriers.contains(carrier),
+            title: Text(operator),
+            value: _selectedOperators.contains(operator),
             onChanged: (value) {
               setState(() {
                 if (value == true) {
-                  _selectedCarriers.add(carrier);
+                  _selectedOperators.add(operator);
                 } else {
-                  _selectedCarriers.remove(carrier);
+                  _selectedOperators.remove(operator);
                 }
               });
             },
             contentPadding: EdgeInsets.zero,
             dense: true,
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -341,9 +369,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   void _clearFilters() {
     setState(() {
       _priceRange = const RangeValues(500000, 2000000);
-      _departureStart = null;
-      _departureEnd = null;
-      _selectedCarriers.clear();
+      _selectedTimeSlots.clear();
+      _selectedOperators.clear();
+      _maxDuration = 12.0;
       _directFlightsOnly = false;
     });
   }
@@ -352,18 +380,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     final filters = <String, dynamic>{
       'minPrice': _priceRange.start.toInt(),
       'maxPrice': _priceRange.end.toInt(),
-      'carriers': _selectedCarriers.toList(),
+      'departureTime': _selectedTimeSlots.toList(),
+      'operators': _selectedOperators.toList(),
+      'maxDuration': _maxDuration,
       'directFlightsOnly': _directFlightsOnly,
     };
-    
-    if (_departureStart != null) {
-      filters['departureStart'] = DateTime(2024, 1, 1, _departureStart!.hour, _departureStart!.minute);
-    }
-    
-    if (_departureEnd != null) {
-      filters['departureEnd'] = DateTime(2024, 1, 1, _departureEnd!.hour, _departureEnd!.minute);
-    }
-    
+
     widget.onApply(filters);
     Navigator.pop(context);
   }

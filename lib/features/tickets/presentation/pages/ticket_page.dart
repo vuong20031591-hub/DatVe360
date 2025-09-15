@@ -6,10 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
 
 class TicketPage extends ConsumerStatefulWidget {
-  const TicketPage({
-    super.key,
-    required this.bookingId,
-  });
+  const TicketPage({super.key, required this.bookingId});
 
   final String bookingId;
 
@@ -32,10 +29,17 @@ class _TicketPageState extends ConsumerState<TicketPage> {
       _isLoading = true;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // TODO: Replace with real API call
+      // final ticketRepository = TicketRepository(DioClient());
+      // _ticketData = await ticketRepository.getTicketByBookingId(widget.bookingId);
 
-    _ticketData = _getMockTicketData();
+      // For now, set empty data
+      _ticketData = null;
+    } catch (e) {
+      // Handle error
+      _ticketData = null;
+    }
 
     setState(() {
       _isLoading = false;
@@ -48,23 +52,15 @@ class _TicketPageState extends ConsumerState<TicketPage> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Vé điện tử'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        appBar: AppBar(title: const Text('Vé điện tử')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_ticketData == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Vé điện tử'),
-        ),
-        body: const Center(
-          child: Text('Không tìm thấy thông tin vé'),
-        ),
+        appBar: AppBar(title: const Text('Vé điện tử')),
+        body: const Center(child: Text('Không tìm thấy thông tin vé')),
       );
     }
 
@@ -90,19 +86,19 @@ class _TicketPageState extends ConsumerState<TicketPage> {
           children: [
             // Ticket card
             _buildTicketCard(theme),
-            
+
             const SizedBox(height: 24),
-            
+
             // QR Code
             _buildQRCode(theme),
-            
+
             const SizedBox(height: 24),
-            
+
             // Important notes
             _buildImportantNotes(theme),
-            
+
             const SizedBox(height: 24),
-            
+
             // Action buttons
             _buildActionButtons(),
           ],
@@ -114,7 +110,7 @@ class _TicketPageState extends ConsumerState<TicketPage> {
   Widget _buildTicketCard(ThemeData theme) {
     final ticket = _ticketData!;
     final trip = ticket['trip'] as Map<String, dynamic>;
-    
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -133,11 +129,7 @@ class _TicketPageState extends ConsumerState<TicketPage> {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                Icon(Icons.check_circle, color: Colors.white, size: 32),
                 const SizedBox(height: 8),
                 Text(
                   'VÉ ĐÃ XÁC NHẬN',
@@ -155,7 +147,7 @@ class _TicketPageState extends ConsumerState<TicketPage> {
               ],
             ),
           ),
-          
+
           // Flight info
           Padding(
             padding: const EdgeInsets.all(16),
@@ -174,20 +166,19 @@ class _TicketPageState extends ConsumerState<TicketPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(
-                            trip['from'],
-                            style: theme.textTheme.bodyLarge,
-                          ),
+                          Text(trip['from'], style: theme.textTheme.bodyLarge),
                           Text(
                             _formatDate(trip['departDate']),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     Column(
                       children: [
                         Icon(
@@ -204,7 +195,7 @@ class _TicketPageState extends ConsumerState<TicketPage> {
                         ),
                       ],
                     ),
-                    
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -221,9 +212,13 @@ class _TicketPageState extends ConsumerState<TicketPage> {
                             textAlign: TextAlign.end,
                           ),
                           Text(
-                            _formatDate(trip['arriveDate'] ?? trip['departDate']),
+                            _formatDate(
+                              trip['arriveDate'] ?? trip['departDate'],
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
                             ),
                           ),
                         ],
@@ -231,11 +226,11 @@ class _TicketPageState extends ConsumerState<TicketPage> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 16),
-                
+
                 // Passenger and seat info
                 Row(
                   children: [
@@ -257,9 +252,9 @@ class _TicketPageState extends ConsumerState<TicketPage> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -288,7 +283,12 @@ class _TicketPageState extends ConsumerState<TicketPage> {
     );
   }
 
-  Widget _buildInfoItem(ThemeData theme, String label, String value, IconData icon) {
+  Widget _buildInfoItem(
+    ThemeData theme,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -369,10 +369,7 @@ class _TicketPageState extends ConsumerState<TicketPage> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.info_outline, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   'Lưu ý quan trọng',
@@ -395,7 +392,7 @@ class _TicketPageState extends ConsumerState<TicketPage> {
 
   Widget _buildNoteItem(String text) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -475,11 +472,9 @@ class _TicketPageState extends ConsumerState<TicketPage> {
 
   void _downloadPdf() {
     // TODO: Implement PDF download
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang tải PDF...'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đang tải PDF...')));
   }
 
   void _addToWallet() {
@@ -489,27 +484,5 @@ class _TicketPageState extends ConsumerState<TicketPage> {
         content: Text('Tính năng thêm vào ví sẽ được cập nhật sau'),
       ),
     );
-  }
-
-  Map<String, dynamic> _getMockTicketData() {
-    return {
-      'id': 'ticket_${widget.bookingId}',
-      'bookingId': widget.bookingId,
-      'pnr': 'ABC123',
-      'passengerName': 'Nguyễn Văn A',
-      'seatNumber': '12A',
-      'qrData': 'DATVE360|${widget.bookingId}|ABC123|Nguyễn Văn A|HAN|SGN|${DateTime.now().add(const Duration(days: 7)).millisecondsSinceEpoch}|12A|Vietnam Airlines|${DateTime.now().millisecondsSinceEpoch}',
-      'issuedAt': DateTime.now(),
-      'trip': {
-        'carrier': 'Vietnam Airlines',
-        'flightNumber': 'VN210',
-        'from': 'Hà Nội (HAN)',
-        'to': 'TP.HCM (SGN)',
-        'departTime': '06:00',
-        'arriveTime': '08:15',
-        'duration': '2h 15m',
-        'departDate': DateTime.now().add(const Duration(days: 7)),
-      },
-    };
   }
 }

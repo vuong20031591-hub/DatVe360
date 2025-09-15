@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/i18n/l10n.dart';
+import '../../../search/presentation/providers/search_provider.dart';
+import '../../../search/data/models/schedule.dart';
+import '../../../search/data/models/search_query.dart';
 
-import '../widgets/trip_card.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/sort_dropdown.dart';
 import '../widgets/results_shimmer.dart';
 import '../widgets/empty_results.dart';
+import '../widgets/schedule_card.dart';
 
 class ResultsPage extends ConsumerStatefulWidget {
-  const ResultsPage({super.key, this.searchQuery});
-
-  final Map<String, dynamic>? searchQuery;
+  const ResultsPage({super.key});
 
   @override
   ConsumerState<ResultsPage> createState() => _ResultsPageState();
@@ -21,29 +22,10 @@ class ResultsPage extends ConsumerStatefulWidget {
 class _ResultsPageState extends ConsumerState<ResultsPage> {
   String _sortBy = 'price_asc';
   Map<String, dynamic> _filters = {};
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _trips = [];
 
   @override
   void initState() {
     super.initState();
-    _loadResults();
-  }
-
-  void _loadResults() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Mock data
-    _trips = _getMockTrips();
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
@@ -93,7 +75,7 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
       body: Column(
         children: [
           // Search summary
-          if (widget.searchQuery != null) _buildSearchSummary(context),
+          _buildSearchSummary(context),
 
           // Results
           Expanded(child: _buildResultsList(context)),
@@ -104,7 +86,13 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
 
   Widget _buildSearchSummary(BuildContext context) {
     final theme = Theme.of(context);
-    final query = widget.searchQuery!;
+    final searchState = ref.watch(searchProvider);
+
+    if (searchState.lastQuery == null) {
+      return const SizedBox.shrink();
+    }
+
+    final query = searchState.lastQuery!;
 
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -119,7 +107,7 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${query['from']} → ${query['to']}',
+                  '${query.from} → ${query.to}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -134,9 +122,9 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
               ],
             ),
           ),
-          if (!_isLoading)
+          if (!searchState.isLoading && searchState.hasResults)
             Text(
-              '${_trips.length} chuyến',
+              '${searchState.schedules.length} chuyến',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,
@@ -148,13 +136,53 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
   }
 
   Widget _buildResultsList(BuildContext context) {
-    if (_isLoading) {
+    final searchState = ref.watch(searchProvider);
+
+    if (searchState.isLoading) {
       return const ResultsShimmer();
     }
 
-    if (_trips.isEmpty) {
+    if (searchState.hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              searchState.error!,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                if (searchState.lastQuery != null) {
+                  ref
+                      .read(searchProvider.notifier)
+                      .searchSchedules(searchState.lastQuery!);
+                }
+              },
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!searchState.hasResults) {
       return EmptyResults(
-        onRetry: _loadResults,
+        onRetry: () {
+          if (searchState.lastQuery != null) {
+            ref
+                .read(searchProvider.notifier)
+                .searchSchedules(searchState.lastQuery!);
+          }
+        },
         onChangeSearch: () {
           Navigator.pop(context);
         },
@@ -163,28 +191,35 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        _loadResults();
+        if (searchState.lastQuery != null) {
+          await ref
+              .read(searchProvider.notifier)
+              .searchSchedules(searchState.lastQuery!);
+        }
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        itemCount: _trips.length,
+        itemCount: searchState.schedules.length + (searchState.hasMore ? 1 : 0),
         itemBuilder: (context, index) {
-          final trip = _trips[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: TripCard(trip: trip, onTap: () => _selectTrip(trip)),
+          // Show load more button at the end
+          if (index == searchState.schedules.length) {
+            return _buildLoadMoreButton();
+          }
+
+          final schedule = searchState.schedules[index];
+          return ScheduleCard(
+            schedule: schedule,
+            onSelect: () => _selectSchedule(schedule),
           );
         },
       ),
     );
   }
 
-  String _formatSearchDate(Map<String, dynamic> query) {
-    final departDate = query['departDate'] as DateTime?;
-    final returnDate = query['returnDate'] as DateTime?;
-    final passengers = '${query['adults']} người lớn';
-
-    if (departDate == null) return passengers;
+  String _formatSearchDate(SearchQuery query) {
+    final departDate = query.departDate;
+    final returnDate = query.returnDate;
+    final passengers = '${query.passengers.adult} người lớn';
 
     final departStr = '${departDate.day}/${departDate.month}';
     if (returnDate != null) {
@@ -212,108 +247,36 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
   }
 
   void _sortTrips() {
-    _trips.sort((a, b) {
-      switch (_sortBy) {
-        case 'price_asc':
-          return a['price'].compareTo(b['price']);
-        case 'price_desc':
-          return b['price'].compareTo(a['price']);
-        case 'duration_asc':
-          return a['duration'].compareTo(b['duration']);
-        case 'duration_desc':
-          return b['duration'].compareTo(a['duration']);
-        case 'departure_asc':
-          return a['departTime'].compareTo(b['departTime']);
-        case 'departure_desc':
-          return b['departTime'].compareTo(a['departTime']);
-        default:
-          return 0;
-      }
-    });
-    setState(() {});
+    // Apply sorting directly through search provider
+    ref.read(searchProvider.notifier).applySorting(_sortBy);
   }
 
   void _applyFilters() {
-    // TODO: Apply filters to trips list
-    setState(() {});
+    ref.read(searchProvider.notifier).applyFilters(_filters);
   }
 
-  void _selectTrip(Map<String, dynamic> trip) {
-    // TODO: Navigate to trip detail page
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Chọn chuyến: ${trip['carrier']} ${trip['route']}'),
+  Widget _buildLoadMoreButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            ref.read(searchProvider.notifier).loadMoreResults();
+          },
+          child: const Text('Tải thêm kết quả'),
+        ),
       ),
     );
   }
 
-  List<Map<String, dynamic>> _getMockTrips() {
-    return [
-      {
-        'id': '1',
-        'carrier': 'Vietnam Airlines',
-        'logo': 'assets/images/vna_logo.png',
-        'route': 'HAN → SGN',
-        'departTime': '06:00',
-        'arriveTime': '08:15',
-        'duration': '2h 15m',
-        'price': 1200000,
-        'currency': 'VND',
-        'stops': 0,
-        'aircraft': 'A321',
-      },
-      {
-        'id': '2',
-        'carrier': 'VietJet Air',
-        'logo': 'assets/images/vj_logo.png',
-        'route': 'HAN → SGN',
-        'departTime': '07:30',
-        'arriveTime': '09:45',
-        'duration': '2h 15m',
-        'price': 980000,
-        'currency': 'VND',
-        'stops': 0,
-        'aircraft': 'A320',
-      },
-      {
-        'id': '3',
-        'carrier': 'Bamboo Airways',
-        'logo': 'assets/images/qh_logo.png',
-        'route': 'HAN → SGN',
-        'departTime': '09:15',
-        'arriveTime': '11:30',
-        'duration': '2h 15m',
-        'price': 1100000,
-        'currency': 'VND',
-        'stops': 0,
-        'aircraft': 'A321neo',
-      },
-      {
-        'id': '4',
-        'carrier': 'Vietnam Airlines',
-        'logo': 'assets/images/vna_logo.png',
-        'route': 'HAN → SGN',
-        'departTime': '14:20',
-        'arriveTime': '16:35',
-        'duration': '2h 15m',
-        'price': 1350000,
-        'currency': 'VND',
-        'stops': 0,
-        'aircraft': 'A350',
-      },
-      {
-        'id': '5',
-        'carrier': 'VietJet Air',
-        'logo': 'assets/images/vj_logo.png',
-        'route': 'HAN → SGN',
-        'departTime': '18:45',
-        'arriveTime': '21:00',
-        'duration': '2h 15m',
-        'price': 1050000,
-        'currency': 'VND',
-        'stops': 0,
-        'aircraft': 'A321',
-      },
-    ];
+  void _selectSchedule(Schedule schedule) {
+    // TODO: Navigate to booking page with selected schedule
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Chọn chuyến: ${schedule.operatorName} ${schedule.fromCode}-${schedule.toCode}',
+        ),
+      ),
+    );
   }
 }

@@ -166,18 +166,4 @@ class StorageService {
     }
     return size;
   }
-
-  /// Debug: Print all stored data
-  void debugPrintAll() {
-    if (kDebugMode) {
-      print('=== StorageService Debug ===');
-      for (String key in _prefs.getKeys()) {
-        final value = _prefs.get(key);
-        print('$key: $value');
-      }
-      print('Total keys: ${_prefs.getKeys().length}');
-      print('Approximate size: ${getStorageSize()} characters');
-      print('===========================');
-    }
-  }
 }

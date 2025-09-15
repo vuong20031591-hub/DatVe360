@@ -17,12 +17,13 @@ const logger = require('./utils/logger');
 // const notFound = require('./middleware/notFound');
 
 // Import routes
-let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes;
+let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes, destinationRoutes;
 try {
   authRoutes = require('./routes/auth');
   tripRoutes = require('./routes/trip');
   bookingRoutes = require('./routes/bookings');
   scheduleRoutes = require('./routes/schedules');
+  destinationRoutes = require('./routes/destinations');
 } catch (error) {
   console.error('Error importing routes:', error);
   process.exit(1);
@@ -90,6 +91,7 @@ app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/trips`, tripRoutes);
 app.use(`${API_PREFIX}/bookings`, bookingRoutes);
 app.use(`${API_PREFIX}/schedules`, scheduleRoutes);
+app.use(`${API_PREFIX}/destinations`, destinationRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static('uploads'));
@@ -100,9 +102,10 @@ app.use('/uploads', express.static('uploads'));
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Server started on port ${PORT} in ${process.env.NODE_ENV} mode`);
   logger.info(`🌐 API available at http://localhost:${PORT}${API_PREFIX}`);
+  logger.info(`🌐 API available at http://192.168.100.245:${PORT}${API_PREFIX}`);
 });
 
 // Graceful shutdown
