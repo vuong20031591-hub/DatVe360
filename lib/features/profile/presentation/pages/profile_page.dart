@@ -144,19 +144,6 @@ class ProfilePage extends ConsumerWidget {
             ),
 
             const SizedBox(height: 32),
-
-            // Logout button (placeholder)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => _showComingSoon(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  side: BorderSide(color: theme.colorScheme.error),
-                ),
-                child: Text(localizations.logout),
-              ),
-            ),
           ],
         ),
       ),
@@ -207,16 +194,6 @@ class ProfilePage extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Tính năng này sẽ được cập nhật trong phiên bản tiếp theo',
-        ),
-      ),
     );
   }
 

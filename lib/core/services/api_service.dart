@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_constants.dart';
 import '../network/dio_client.dart';
@@ -47,12 +48,15 @@ class ApiService {
     String? phoneNumber,
   }) async {
     try {
-      final response = await _dioClient.post('/auth/register', data: {
-        'email': email,
-        'password': password,
-        'displayName': displayName,
-        if (phoneNumber != null) 'phoneNumber': phoneNumber,
-      });
+      final response = await _dioClient.post(
+        '/auth/register',
+        data: {
+          'email': email,
+          'password': password,
+          'displayName': displayName,
+          if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        },
+      );
 
       final data = response.data;
       if (data['success'] == true && data['data']['tokens'] != null) {
@@ -71,16 +75,18 @@ class ApiService {
     bool rememberMe = false,
   }) async {
     try {
-      final response = await _dioClient.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-        'rememberMe': rememberMe,
-      });
+      final response = await _dioClient.post(
+        '/auth/login',
+        data: {'email': email, 'password': password, 'rememberMe': rememberMe},
+      );
 
       final data = response.data;
       if (data['success'] == true && data['data']['tokens'] != null) {
         await setAuthToken(data['data']['tokens']['accessToken']);
-        await _storage.write('refresh_token', data['data']['tokens']['refreshToken']);
+        await _storage.write(
+          'refresh_token',
+          data['data']['tokens']['refreshToken'],
+        );
       }
 
       return data;
@@ -92,9 +98,10 @@ class ApiService {
   Future<void> logout() async {
     try {
       final refreshToken = await _storage.read('refresh_token');
-      await _dioClient.post('/auth/logout', data: {
-        if (refreshToken != null) 'refreshToken': refreshToken,
-      });
+      await _dioClient.post(
+        '/auth/logout',
+        data: {if (refreshToken != null) 'refreshToken': refreshToken},
+      );
     } finally {
       await clearAuthToken();
       await _storage.delete('refresh_token');
@@ -115,10 +122,10 @@ class ApiService {
     required String currentPassword,
     required String newPassword,
   }) async {
-    final response = await _dioClient.post('/auth/change-password', data: {
-      'currentPassword': currentPassword,
-      'newPassword': newPassword,
-    });
+    final response = await _dioClient.post(
+      '/auth/change-password',
+      data: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
     return response.data;
   }
 
@@ -136,25 +143,30 @@ class ApiService {
     int limit = 50,
     int page = 1,
   }) async {
-    final response = await _dioClient.get('/schedules/search', queryParameters: {
-      'from': from,
-      'to': to,
-      'departureDate': departureDate,
-      if (returnDate != null) 'returnDate': returnDate,
-      'passengers': passengers,
-      if (className != null) 'class': className,
-      if (maxPrice != null) 'maxPrice': maxPrice,
-      'sortBy': sortBy,
-      if (transportType != null) 'transportType': transportType,
-      'limit': limit,
-      'page': page,
-    });
+    final response = await _dioClient.get(
+      '/schedules/search',
+      queryParameters: {
+        'from': from,
+        'to': to,
+        'departureDate': departureDate,
+        if (returnDate != null) 'returnDate': returnDate,
+        'passengers': passengers,
+        if (className != null) 'class': className,
+        if (maxPrice != null) 'maxPrice': maxPrice,
+        'sortBy': sortBy,
+        if (transportType != null) 'transportType': transportType,
+        'limit': limit,
+        'page': page,
+      },
+    );
     return response.data;
   }
 
   Future<Map<String, dynamic>> getPopularRoutes({int limit = 10}) async {
-    final response = await _dioClient.get('/schedules/popular-routes', 
-      queryParameters: {'limit': limit});
+    final response = await _dioClient.get(
+      '/schedules/popular-routes',
+      queryParameters: {'limit': limit},
+    );
     return response.data;
   }
 
@@ -163,8 +175,12 @@ class ApiService {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> getScheduleAvailability(String scheduleId) async {
-    final response = await _dioClient.get('/schedules/$scheduleId/availability');
+  Future<Map<String, dynamic>> getScheduleAvailability(
+    String scheduleId,
+  ) async {
+    final response = await _dioClient.get(
+      '/schedules/$scheduleId/availability',
+    );
     return response.data;
   }
 
@@ -177,14 +193,17 @@ class ApiService {
     required Map<String, dynamic> contactInfo,
     required String paymentMethod,
   }) async {
-    final response = await _dioClient.post('/bookings', data: {
-      'scheduleId': scheduleId,
-      'passengers': passengers,
-      'selectedClass': selectedClass,
-      if (selectedSeats != null) 'selectedSeats': selectedSeats,
-      'contactInfo': contactInfo,
-      'paymentMethod': paymentMethod,
-    });
+    final response = await _dioClient.post(
+      '/bookings',
+      data: {
+        'scheduleId': scheduleId,
+        'passengers': passengers,
+        'selectedClass': selectedClass,
+        if (selectedSeats != null) 'selectedSeats': selectedSeats,
+        'contactInfo': contactInfo,
+        'paymentMethod': paymentMethod,
+      },
+    );
     return response.data;
   }
 
@@ -193,11 +212,14 @@ class ApiService {
     int limit = 20,
     int page = 1,
   }) async {
-    final response = await _dioClient.get('/bookings', queryParameters: {
-      if (status != null) 'status': status,
-      'limit': limit,
-      'page': page,
-    });
+    final response = await _dioClient.get(
+      '/bookings',
+      queryParameters: {
+        if (status != null) 'status': status,
+        'limit': limit,
+        'page': page,
+      },
+    );
     return response.data;
   }
 
@@ -220,10 +242,10 @@ class ApiService {
     String bookingId, {
     String? reason,
   }) async {
-    final response = await _dioClient.post('/bookings/$bookingId/cancel', 
-      data: {
-        if (reason != null) 'reason': reason,
-      });
+    final response = await _dioClient.post(
+      '/bookings/$bookingId/cancel',
+      data: {if (reason != null) 'reason': reason},
+    );
     return response.data;
   }
 
@@ -261,11 +283,14 @@ class ApiService {
     int limit = 20,
     int page = 1,
   }) async {
-    final response = await _dioClient.get('/tickets', queryParameters: {
-      if (status != null) 'status': status,
-      'limit': limit,
-      'page': page,
-    });
+    final response = await _dioClient.get(
+      '/tickets',
+      queryParameters: {
+        if (status != null) 'status': status,
+        'limit': limit,
+        'page': page,
+      },
+    );
     return response.data;
   }
 
@@ -281,13 +306,15 @@ class ApiService {
     String? city,
     int limit = 20,
   }) async {
-    final response = await _dioClient.get('/destinations/search', 
+    final response = await _dioClient.get(
+      '/destinations/search',
       queryParameters: {
         'q': query,
         if (type != null) 'type': type,
         if (city != null) 'city': city,
         'limit': limit,
-      });
+      },
+    );
     return response.data;
   }
 
@@ -296,12 +323,14 @@ class ApiService {
     bool popularOnly = false,
     int limit = 100,
   }) async {
-    final response = await _dioClient.get('/destinations', 
+    final response = await _dioClient.get(
+      '/destinations',
       queryParameters: {
         if (type != null) 'type': type,
         'popularOnly': popularOnly,
         'limit': limit,
-      });
+      },
+    );
     return response.data;
   }
 
@@ -316,11 +345,14 @@ class ApiService {
     required String paymentMethod,
     String? returnUrl,
   }) async {
-    final response = await _dioClient.post('/payments/process', data: {
-      'bookingId': bookingId,
-      'paymentMethod': paymentMethod,
-      if (returnUrl != null) 'returnUrl': returnUrl,
-    });
+    final response = await _dioClient.post(
+      '/payments/process',
+      data: {
+        'bookingId': bookingId,
+        'paymentMethod': paymentMethod,
+        if (returnUrl != null) 'returnUrl': returnUrl,
+      },
+    );
     return response.data;
   }
 
@@ -356,7 +388,7 @@ class ApiService {
         final errorData = error.response!.data as Map<String, dynamic>;
         return errorData['message'] ?? 'Đã xảy ra lỗi không xác định';
       }
-      
+
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
@@ -384,14 +416,18 @@ class ApiService {
       final refreshToken = await _storage.read('refresh_token');
       if (refreshToken == null) return false;
 
-      final response = await _dioClient.post('/auth/refresh', data: {
-        'refreshToken': refreshToken,
-      });
+      final response = await _dioClient.post(
+        '/auth/refresh',
+        data: {'refreshToken': refreshToken},
+      );
 
       final data = response.data;
       if (data['success'] == true && data['data']['tokens'] != null) {
         await setAuthToken(data['data']['tokens']['accessToken']);
-        await _storage.write('refresh_token', data['data']['tokens']['refreshToken']);
+        await _storage.write(
+          'refresh_token',
+          data['data']['tokens']['refreshToken'],
+        );
         return true;
       }
       return false;
@@ -402,3 +438,8 @@ class ApiService {
     }
   }
 }
+
+/// Provider for ApiService
+final apiServiceProvider = Provider<ApiService>((ref) {
+  return ApiService.instance;
+});

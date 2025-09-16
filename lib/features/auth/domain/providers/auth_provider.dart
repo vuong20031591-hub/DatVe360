@@ -3,6 +3,7 @@ import '../../data/models/auth_state.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/real_auth_repository.dart';
+import '../../../../core/services/token_refresh_service.dart';
 
 /// Auth repository provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -12,10 +13,12 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 /// Auth state notifier
 class AuthNotifier extends Notifier<AuthState> {
   late final AuthRepository _authRepository;
+  late final TokenRefreshService _tokenRefreshService;
 
   @override
   AuthState build() {
     _authRepository = ref.read(authRepositoryProvider);
+    _tokenRefreshService = ref.read(tokenRefreshServiceProvider);
     _initializeAuth();
     return AuthState.initial();
   }
@@ -51,6 +54,10 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       state = AuthState.loading();
       final response = await _authRepository.login(request);
+
+      // Start auto-refresh for token
+      await _tokenRefreshService.setTokenExpiry(response.expiresIn);
+
       state = AuthState.authenticated(response.user);
     } catch (e) {
       state = AuthState.error(e.toString());
@@ -62,6 +69,10 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       state = AuthState.loading();
       final response = await _authRepository.register(request);
+
+      // Start auto-refresh for token
+      await _tokenRefreshService.setTokenExpiry(response.expiresIn);
+
       state = AuthState.authenticated(response.user);
     } catch (e) {
       state = AuthState.error(e.toString());
@@ -72,6 +83,10 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> logout() async {
     try {
       state = AuthState.loading();
+
+      // Stop auto-refresh
+      _tokenRefreshService.stopAutoRefresh();
+
       await _authRepository.logout();
       state = AuthState.unauthenticated();
     } catch (e) {

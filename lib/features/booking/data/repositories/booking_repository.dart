@@ -13,11 +13,33 @@ class BookingRepository {
       final response = await _dioClient.post('/bookings', data: bookingData);
 
       if (response.data['success'] == true && response.data['data'] != null) {
-        return Booking.fromJson(response.data['data']['booking']);
+        final bookingJson = response.data['data']['booking'];
+        if (bookingJson != null) {
+          try {
+            return Booking.fromJson(bookingJson);
+          } catch (parseError) {
+            print('Booking.fromJson error: $parseError');
+            print('Booking JSON: $bookingJson');
+            throw Exception('Failed to parse booking data: $parseError');
+          }
+        } else {
+          print('Response data: ${response.data}');
+          throw Exception('Booking data is null in response');
+        }
       } else {
+        print(
+          'API Error - Success: ${response.data['success']}, Message: ${response.data['message']}',
+        );
         throw Exception(response.data['message'] ?? 'Tạo booking thất bại');
       }
     } catch (e) {
+      // Log the full error for debugging
+      print('BookingRepository.createBooking error: $e');
+      if (e.toString().contains('Failed to create booking:') ||
+          e.toString().contains('Failed to parse booking data:') ||
+          e.toString().contains('Booking data is null')) {
+        rethrow;
+      }
       throw Exception('Failed to create booking: $e');
     }
   }

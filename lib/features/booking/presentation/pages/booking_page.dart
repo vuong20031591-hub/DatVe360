@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../providers/booking_provider.dart';
@@ -127,42 +128,42 @@ class _BookingPageState extends ConsumerState<BookingPage> {
                     });
                   },
                   onPaymentComplete: _handlePaymentComplete,
+                  onPrevious: _previousStep,
                 ),
               ],
             ),
           ),
 
-          // Navigation buttons
-          Container(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(top: BorderSide(color: theme.dividerColor)),
-            ),
-            child: Row(
-              children: [
-                if (_currentStep > 0)
+          // Navigation buttons (hidden on payment step)
+          if (_currentStep < 2)
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(top: BorderSide(color: theme.dividerColor)),
+              ),
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    Expanded(
+                      child: AppButton(
+                        onPressed: _previousStep,
+                        text: 'Quay lại',
+                        type: AppButtonType.outline,
+                        icon: Icons.arrow_back,
+                      ),
+                    ),
+                  if (_currentStep > 0) const SizedBox(width: 16),
                   Expanded(
                     child: AppButton(
-                      onPressed: _previousStep,
-                      text: 'Quay lại',
-                      type: AppButtonType.outline,
-                      icon: Icons.arrow_back,
+                      onPressed: _canProceed() ? _nextStep : null,
+                      text: 'Tiếp theo',
+                      icon: Icons.arrow_forward,
                     ),
                   ),
-                if (_currentStep > 0) const SizedBox(width: 16),
-                Expanded(
-                  child: AppButton(
-                    onPressed: _canProceed() ? _nextStep : null,
-                    text: _currentStep == 2 ? 'Thanh toán' : 'Tiếp theo',
-                    icon: _currentStep == 2
-                        ? Icons.payment
-                        : Icons.arrow_forward,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -314,15 +315,68 @@ class _BookingPageState extends ConsumerState<BookingPage> {
   }
 
   void _handlePaymentComplete(String bookingId) {
-    // TODO: Navigate to ticket page
+    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Đặt vé thành công! Mã đặt vé: $bookingId'),
         backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
       ),
     );
 
-    // Navigate back to home or to ticket page
+    // Navigate to booking success page or ticket details
+    _navigateToBookingSuccess(bookingId);
+  }
+
+  void _navigateToBookingSuccess(String bookingId) {
+    // Show success dialog with options
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.check_circle, color: Colors.green, size: 64),
+        title: const Text('Đặt vé thành công!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Mã đặt vé: $bookingId'),
+            const SizedBox(height: 8),
+            const Text(
+              'Vé của bạn đã được tạo thành công. Bạn có thể xem chi tiết vé hoặc quay về trang chủ.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(
+                context,
+              ).popUntil((route) => route.isFirst); // Go to home
+            },
+            child: const Text('Về trang chủ'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              _navigateToTicketDetails(bookingId);
+            },
+            child: const Text('Xem vé'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToTicketDetails(String bookingId) {
+    // Navigate to manage bookings page to see the new booking
     Navigator.of(context).popUntil((route) => route.isFirst);
+
+    // Navigate to manage bookings page
+    context.go('/manage');
+
+    // TODO: In future, navigate to specific ticket details page
+    // context.go('/tickets/$bookingId');
   }
 }

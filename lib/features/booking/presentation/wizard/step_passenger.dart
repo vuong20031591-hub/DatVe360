@@ -24,7 +24,8 @@ class _StepPassengerState extends State<StepPassenger> {
 
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
-  final _contactNameController = TextEditingController();
+  final _contactFirstNameController = TextEditingController();
+  final _contactLastNameController = TextEditingController();
 
   @override
   void initState() {
@@ -37,7 +38,8 @@ class _StepPassengerState extends State<StepPassenger> {
   void dispose() {
     _contactEmailController.dispose();
     _contactPhoneController.dispose();
-    _contactNameController.dispose();
+    _contactFirstNameController.dispose();
+    _contactLastNameController.dispose();
 
     for (final controllers in _passengerControllers) {
       for (final controller in controllers.values) {
@@ -64,8 +66,10 @@ class _StepPassengerState extends State<StepPassenger> {
         'lastName': TextEditingController(),
         'dateOfBirth': TextEditingController(),
         'nationality': TextEditingController(text: 'Việt Nam'),
-        'idNumber': TextEditingController(),
-        'idType': TextEditingController(text: 'CCCD'),
+        'documentNumber': TextEditingController(),
+        'documentType': TextEditingController(text: 'id_card'),
+        'type': TextEditingController(text: 'adult'),
+        'gender': TextEditingController(text: 'male'),
       });
     }
   }
@@ -78,7 +82,8 @@ class _StepPassengerState extends State<StepPassenger> {
 
     _contactEmailController.text = contactInfo['email'] ?? '';
     _contactPhoneController.text = contactInfo['phone'] ?? '';
-    _contactNameController.text = contactInfo['name'] ?? '';
+    _contactFirstNameController.text = contactInfo['firstName'] ?? '';
+    _contactLastNameController.text = contactInfo['lastName'] ?? '';
 
     for (
       int i = 0;
@@ -90,10 +95,15 @@ class _StepPassengerState extends State<StepPassenger> {
 
       controllers['firstName']?.text = passenger['firstName'] ?? '';
       controllers['lastName']?.text = passenger['lastName'] ?? '';
-      controllers['dateOfBirth']?.text = passenger['dateOfBirth'] ?? '';
+      controllers['dateOfBirth']?.text = _convertISOToDisplayDate(
+        passenger['dateOfBirth'] ?? '',
+      );
       controllers['nationality']?.text = passenger['nationality'] ?? 'Việt Nam';
-      controllers['idNumber']?.text = passenger['idNumber'] ?? '';
-      controllers['idType']?.text = passenger['idType'] ?? 'CCCD';
+      controllers['documentNumber']?.text = passenger['documentNumber'] ?? '';
+      controllers['documentType']?.text =
+          passenger['documentType'] ?? 'id_card';
+      controllers['type']?.text = passenger['type'] ?? 'adult';
+      controllers['gender']?.text = passenger['gender'] ?? 'male';
     }
   }
 
@@ -135,18 +145,38 @@ class _StepPassengerState extends State<StepPassenger> {
 
                     const SizedBox(height: 16),
 
-                    AppTextField(
-                      controller: _contactNameController,
-                      label: 'Họ và tên người liên hệ',
-                      hint: 'Nhập họ và tên đầy đủ',
-                      prefixIcon: Icons.person,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập họ và tên';
-                        }
-                        return null;
-                      },
-                      onChanged: _saveData,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            controller: _contactLastNameController,
+                            label: 'Họ người liên hệ',
+                            hint: 'Nguyễn',
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Vui lòng nhập họ';
+                              }
+                              return null;
+                            },
+                            onChanged: _saveData,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppTextField(
+                            controller: _contactFirstNameController,
+                            label: 'Tên người liên hệ',
+                            hint: 'Văn A',
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Vui lòng nhập tên';
+                              }
+                              return null;
+                            },
+                            onChanged: _saveData,
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 16),
@@ -265,33 +295,33 @@ class _StepPassengerState extends State<StepPassenger> {
                               Expanded(
                                 child: DropdownButtonFormField<String>(
                                   initialValue:
-                                      _passengerControllers[index]['idType']!
+                                      _passengerControllers[index]['documentType']!
                                           .text
                                           .isNotEmpty
-                                      ? _passengerControllers[index]['idType']!
+                                      ? _passengerControllers[index]['documentType']!
                                             .text
-                                      : 'CCCD',
+                                      : 'id_card',
                                   decoration: const InputDecoration(
                                     labelText: 'Loại giấy tờ',
                                     prefixIcon: Icon(Icons.badge),
                                   ),
                                   items: const [
                                     DropdownMenuItem(
-                                      value: 'CCCD',
+                                      value: 'id_card',
                                       child: Text('CCCD'),
                                     ),
                                     DropdownMenuItem(
-                                      value: 'CMND',
-                                      child: Text('CMND'),
+                                      value: 'passport',
+                                      child: Text('Hộ chiếu'),
                                     ),
                                     DropdownMenuItem(
-                                      value: 'Passport',
-                                      child: Text('Hộ chiếu'),
+                                      value: 'driver_license',
+                                      child: Text('Bằng lái xe'),
                                     ),
                                   ],
                                   onChanged: (value) {
                                     if (value != null) {
-                                      _passengerControllers[index]['idType']!
+                                      _passengerControllers[index]['documentType']!
                                               .text =
                                           value;
                                       _saveData();
@@ -303,7 +333,7 @@ class _StepPassengerState extends State<StepPassenger> {
                               Expanded(
                                 child: AppTextField(
                                   controller:
-                                      _passengerControllers[index]['idNumber']!,
+                                      _passengerControllers[index]['documentNumber']!,
                                   label: 'Số giấy tờ',
                                   hint: '001234567890',
                                   validator: (value) {
@@ -333,6 +363,88 @@ class _StepPassengerState extends State<StepPassenger> {
                               return null;
                             },
                             onChanged: _saveData,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  initialValue:
+                                      _passengerControllers[index]['type']!
+                                          .text
+                                          .isNotEmpty
+                                      ? _passengerControllers[index]['type']!
+                                            .text
+                                      : 'adult',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Loại hành khách',
+                                    prefixIcon: Icon(Icons.person),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'adult',
+                                      child: Text('Người lớn'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'child',
+                                      child: Text('Trẻ em'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'infant',
+                                      child: Text('Em bé'),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      _passengerControllers[index]['type']!
+                                              .text =
+                                          value;
+                                      _saveData();
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  initialValue:
+                                      _passengerControllers[index]['gender']!
+                                          .text
+                                          .isNotEmpty
+                                      ? _passengerControllers[index]['gender']!
+                                            .text
+                                      : 'male',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Giới tính',
+                                    prefixIcon: Icon(Icons.person_outline),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'male',
+                                      child: Text('Nam'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'female',
+                                      child: Text('Nữ'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'other',
+                                      child: Text('Khác'),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      _passengerControllers[index]['gender']!
+                                              .text =
+                                          value;
+                                      _saveData();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -377,30 +489,29 @@ class _StepPassengerState extends State<StepPassenger> {
   }
 
   void _quickFillFromContact() {
-    if (_contactNameController.text.isNotEmpty &&
+    if ((_contactFirstNameController.text.isNotEmpty ||
+            _contactLastNameController.text.isNotEmpty) &&
         _passengerControllers.isNotEmpty) {
-      final nameParts = _contactNameController.text.split(' ');
-      if (nameParts.length >= 2) {
-        _passengerControllers[0]['lastName']!.text = nameParts.first;
-        _passengerControllers[0]['firstName']!.text = nameParts
-            .skip(1)
-            .join(' ');
-        _saveData();
+      _passengerControllers[0]['lastName']!.text =
+          _contactLastNameController.text;
+      _passengerControllers[0]['firstName']!.text =
+          _contactFirstNameController.text;
+      _saveData();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Đã điền thông tin hành khách đầu tiên từ thông tin liên hệ',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Đã điền thông tin hành khách đầu tiên từ thông tin liên hệ',
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
   void _saveData([String? _]) {
     final contactInfo = {
-      'name': _contactNameController.text,
+      'firstName': _contactFirstNameController.text,
+      'lastName': _contactLastNameController.text,
       'email': _contactEmailController.text,
       'phone': _contactPhoneController.text,
     };
@@ -410,10 +521,12 @@ class _StepPassengerState extends State<StepPassenger> {
           (controllers) => {
             'firstName': controllers['firstName']!.text,
             'lastName': controllers['lastName']!.text,
-            'dateOfBirth': controllers['dateOfBirth']!.text,
+            'dateOfBirth': _convertDateToISO(controllers['dateOfBirth']!.text),
             'nationality': controllers['nationality']!.text,
-            'idNumber': controllers['idNumber']!.text,
-            'idType': controllers['idType']!.text,
+            'documentNumber': controllers['documentNumber']!.text,
+            'documentType': controllers['documentType']!.text,
+            'type': controllers['type']!.text,
+            'gender': controllers['gender']!.text,
           },
         )
         .toList();
@@ -422,5 +535,39 @@ class _StepPassengerState extends State<StepPassenger> {
       'contactInfo': contactInfo,
       'passengers': passengers,
     });
+  }
+
+  /// Convert date from dd/mm/yyyy format to ISO8601 string
+  String _convertDateToISO(String dateString) {
+    if (dateString.isEmpty) return '';
+
+    try {
+      // Parse dd/mm/yyyy format
+      final parts = dateString.split('/');
+      if (parts.length != 3) return dateString;
+
+      final day = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final year = int.parse(parts[2]);
+
+      final date = DateTime(year, month, day);
+      return date.toIso8601String();
+    } catch (e) {
+      // Return original string if parsing fails
+      return dateString;
+    }
+  }
+
+  /// Convert ISO8601 date string to dd/mm/yyyy display format
+  String _convertISOToDisplayDate(String isoString) {
+    if (isoString.isEmpty) return '';
+
+    try {
+      final date = DateTime.parse(isoString);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    } catch (e) {
+      // Return original string if parsing fails
+      return isoString;
+    }
   }
 }

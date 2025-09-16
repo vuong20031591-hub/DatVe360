@@ -9,8 +9,6 @@ import '../../features/results/presentation/pages/results_page.dart';
 import '../../features/trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/booking/presentation/pages/booking_page.dart';
 import '../../features/booking/presentation/pages/manage_booking_page.dart';
-import '../../features/manage/presentation/pages/manage_booking_page.dart'
-    as manage;
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/tickets/presentation/pages/ticket_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';

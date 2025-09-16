@@ -41,9 +41,7 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
 
     try {
       // Call seat map API
-      final response = await _apiCall(
-        '/api/v1/seats/schedule/${widget.tripId}',
-      );
+      final response = await _apiCall('/seats/schedule/${widget.tripId}');
       if (response['success'] == true && response['data'] != null) {
         final seatMapData = response['data']['seatMap'] as List;
         _seatGrid = _convertApiSeatMapToWidget(seatMapData);
@@ -218,7 +216,9 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -256,39 +256,39 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
                         children: [
                           // Row number
                           SizedBox(
-                            width: 30,
+                            width: 28,
                             child: Text(
                               '${rowIndex + 1}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.6,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
                               textAlign: TextAlign.center,
                             ),
                           ),
 
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
 
                           // Left seats (A, B, C)
                           ...row.take(3).map((seat) => _buildSeat(theme, seat)),
 
                           // Aisle
-                          const SizedBox(width: 24),
+                          const SizedBox(width: 20),
 
                           // Right seats (D, E, F)
                           ...row.skip(3).map((seat) => _buildSeat(theme, seat)),
 
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
 
                           // Row number (right)
                           SizedBox(
-                            width: 30,
+                            width: 28,
                             child: Text(
                               '${rowIndex + 1}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.6,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
                               textAlign: TextAlign.center,
@@ -306,7 +306,7 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 38), // Row number space
+                    const SizedBox(width: 34), // Row number space
                     // Left column labels
                     ...'ABC'
                         .split('')
@@ -319,8 +319,8 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
                             child: Text(
                               letter,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.6,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -328,7 +328,7 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
                           ),
                         ),
 
-                    const SizedBox(width: 24), // Aisle space
+                    const SizedBox(width: 20), // Aisle space
                     // Right column labels
                     ...'DEF'
                         .split('')
@@ -341,8 +341,8 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
                             child: Text(
                               letter,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.6,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                                 fontWeight: FontWeight.w500,
                               ),

@@ -86,7 +86,7 @@ router.post('/register',
     await user.generateVerification();
 
     // Generate tokens
-    const { accessToken, refreshToken } = AuthMiddleware.generateTokens(user._id);
+    const { accessToken, refreshToken, expiresIn } = AuthMiddleware.generateTokens(user._id);
     await user.addRefreshToken(refreshToken);
 
     logger.info('User registered', {
@@ -108,7 +108,7 @@ router.post('/register',
         tokens: {
           accessToken,
           refreshToken,
-          expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+          expiresIn
         }
       }
     });
@@ -142,11 +142,8 @@ router.post('/login',
     await user.updateLastLogin();
 
     // Generate tokens
-    const { accessToken, refreshToken } = AuthMiddleware.generateTokens(user._id);
+    const { accessToken, refreshToken, expiresIn } = AuthMiddleware.generateTokens(user._id, rememberMe);
     await user.addRefreshToken(refreshToken);
-
-    // Set token expiry based on remember me
-    const tokenExpiry = rememberMe ? '30d' : '7d';
 
     logger.info('User logged in', {
       userId: user._id,
@@ -170,7 +167,7 @@ router.post('/login',
         tokens: {
           accessToken,
           refreshToken,
-          expiresIn: tokenExpiry
+          expiresIn
         }
       }
     });
@@ -196,7 +193,7 @@ router.post('/refresh',
     }
 
     // Generate new tokens
-    const { accessToken, refreshToken: newRefreshToken } = AuthMiddleware.generateTokens(userId);
+    const { accessToken, refreshToken: newRefreshToken, expiresIn } = AuthMiddleware.generateTokens(userId);
 
     // Remove old refresh token and add new one
     await user.removeRefreshToken(refreshToken);
@@ -211,7 +208,7 @@ router.post('/refresh',
         tokens: {
           accessToken,
           refreshToken: newRefreshToken,
-          expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+          expiresIn
         }
       }
     });

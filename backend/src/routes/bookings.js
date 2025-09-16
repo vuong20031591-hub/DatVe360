@@ -63,7 +63,7 @@ router.post('/',
     }
 
     // Check seat availability
-    const classInfo = schedule.seatConfiguration.classes[selectedClass];
+    const classInfo = schedule.seatConfiguration.classes.get(selectedClass);
     if (!classInfo) {
       throw new ValidationError('Hạng ghế không tồn tại');
     }
@@ -97,10 +97,21 @@ router.post('/',
       // Calculate total price
       const totalPrice = classInfo.price * passengers.length;
 
+      // Generate PNR
+      const generatePNR = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let pnr = '';
+        for (let i = 0; i < 6; i++) {
+          pnr += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return pnr;
+      };
+
       // Create booking
       const booking = new Booking({
         userId: req.user._id,
         scheduleId,
+        pnr: generatePNR(),
         passengers: passengers.map(p => ({
           ...p,
           seatNumber: selectedSeats ? selectedSeats.shift() : null
@@ -117,7 +128,7 @@ router.post('/',
       await booking.save();
 
       // Update seat availability
-      schedule.seatConfiguration.classes[selectedClass].availableSeats -= passengers.length;
+      schedule.seatConfiguration.classes.get(selectedClass).availableSeats -= passengers.length;
       schedule.seatConfiguration.availableSeats -= passengers.length;
       await schedule.save();
 
@@ -127,7 +138,7 @@ router.post('/',
         userId: req.user._id,
         amount: totalPrice,
         currency: 'VND',
-        method: paymentMethod,
+        paymentMethod: paymentMethod,
         transactionId: `TXN_${Date.now()}_${uuidv4().slice(0, 8).toUpperCase()}`
       });
 

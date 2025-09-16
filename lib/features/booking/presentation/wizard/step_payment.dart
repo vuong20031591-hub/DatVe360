@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../providers/booking_provider.dart';
+import '../../data/models/booking.dart';
 
-class StepPayment extends StatefulWidget {
+class StepPayment extends ConsumerStatefulWidget {
   const StepPayment({
     super.key,
     required this.bookingData,
     required this.onDataChanged,
     required this.onPaymentComplete,
+    required this.onPrevious,
   });
 
   final Map<String, dynamic> bookingData;
   final Function(Map<String, dynamic>) onDataChanged;
   final Function(String bookingId) onPaymentComplete;
+  final VoidCallback onPrevious;
 
   @override
-  State<StepPayment> createState() => _StepPaymentState();
+  ConsumerState<StepPayment> createState() => _StepPaymentState();
 }
 
-class _StepPaymentState extends State<StepPayment> {
+class _StepPaymentState extends ConsumerState<StepPayment> {
   String? _selectedPaymentMethod;
   bool _isProcessing = false;
   bool _agreeToTerms = false;
@@ -260,16 +265,29 @@ class _StepPaymentState extends State<StepPayment> {
 
           const SizedBox(height: 24),
 
-          // Payment button
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              onPressed: _canProceedPayment() ? _processPayment : null,
-              text: _isProcessing ? 'Đang xử lý...' : 'Thanh toán ngay',
-              icon: _isProcessing ? null : Icons.lock,
-              isLoading: _isProcessing,
-              size: AppButtonSize.large,
-            ),
+          // Navigation buttons
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  onPressed: widget.onPrevious,
+                  text: 'Quay lại',
+                  type: AppButtonType.outline,
+                  icon: Icons.arrow_back,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: AppButton(
+                  onPressed: _canProceedPayment() ? _processPayment : null,
+                  text: _isProcessing ? 'Đang xử lý...' : 'Thanh toán ngay',
+                  icon: _isProcessing ? null : Icons.lock,
+                  isLoading: _isProcessing,
+                  size: AppButtonSize.large,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -388,23 +406,80 @@ class _StepPaymentState extends State<StepPayment> {
   }
 
   void _processPayment() async {
+    if (_selectedPaymentMethod == null) return;
+
     setState(() {
       _isProcessing = true;
     });
 
-    // Simulate payment processing
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      // Create booking request
+      final trip = widget.bookingData['trip'] as Map<String, dynamic>?;
+      final passengers =
+          widget.bookingData['passengers'] as List<dynamic>? ?? [];
+      final selectedSeats =
+          widget.bookingData['selectedSeats'] as List<dynamic>? ?? [];
+      final selectedClass =
+          widget.bookingData['selectedClass'] as String? ?? '';
+      final contactInfo =
+          widget.bookingData['contactInfo'] as Map<String, dynamic>? ?? {};
 
-    // Generate booking ID
-    final bookingId =
-        'DV360${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      if (trip == null || passengers.isEmpty) {
+        throw Exception('Thông tin booking không đầy đủ');
+      }
 
-    setState(() {
-      _isProcessing = false;
-    });
+      final bookingRequest = BookingRequest(
+        scheduleId: trip['_id'] ?? trip['id'] ?? '',
+        passengers: passengers.map((p) => Passenger.fromJson(p)).toList(),
+        selectedClass: selectedClass,
+        selectedSeats: selectedSeats.cast<String>(),
+        contactInfo: ContactInfo.fromJson(contactInfo),
+        paymentMethod: _selectedPaymentMethod!,
+      );
 
-    // Call completion callback
-    widget.onPaymentComplete(bookingId);
+      // Create booking via provider
+      final bookingNotifier = ref.read(bookingProvider.notifier);
+      final booking = await bookingNotifier.createBooking(
+        scheduleId: bookingRequest.scheduleId,
+        passengers: bookingRequest.passengers.map((p) => p.toJson()).toList(),
+        selectedClass: bookingRequest.selectedClass,
+        selectedSeats: bookingRequest.selectedSeats,
+        contactInfo: bookingRequest.contactInfo.toJson(),
+        paymentMethod: bookingRequest.paymentMethod,
+      );
+
+      if (booking != null) {
+        // Process payment
+        final paymentResult = await bookingNotifier.processPayment(booking.id, {
+          'payment_method': _selectedPaymentMethod,
+          'amount': _getTotalAmount(),
+        });
+
+        if (paymentResult != null && paymentResult['success'] == true) {
+          setState(() {
+            _isProcessing = false;
+          });
+          widget.onPaymentComplete(booking.id);
+        } else {
+          throw Exception('Thanh toán thất bại');
+        }
+      } else {
+        throw Exception('Tạo booking thất bại');
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   List<Widget> _buildPricingRows(ThemeData theme) {

@@ -154,20 +154,24 @@ class AuthMiddleware {
   }
 
   // Generate tokens
-  static generateTokens(userId) {
+  static generateTokens(userId, rememberMe = false) {
     const accessToken = jwt.sign(
       { userId },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
+
+    const refreshTokenExpiry = rememberMe
+      ? (process.env.JWT_REMEMBER_ME_EXPIRES_IN || '30d')
+      : (process.env.JWT_REFRESH_EXPIRES_IN || '14d');
 
     const refreshToken = jwt.sign(
       { userId, type: 'refresh' },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+      { expiresIn: refreshTokenExpiry }
     );
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, expiresIn: process.env.JWT_EXPIRES_IN || '1h' };
   }
 
   // Verify refresh token
