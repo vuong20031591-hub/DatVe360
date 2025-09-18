@@ -113,6 +113,20 @@ class SettingsPage extends ConsumerWidget {
                 : 'Service usage policy',
             onTap: () => context.push('/terms-policy'),
           ),
+
+          // Debug section (only in debug mode)
+          if (kDebugMode) ...[
+            const SizedBox(height: 24),
+            _buildSectionHeader(theme, 'Debug & Testing'),
+            const SizedBox(height: 8),
+            _buildSettingsTile(
+              context: context,
+              icon: Icons.payment,
+              title: 'Test VNPay Integration',
+              subtitle: 'Test VNPay payment flow with WebView',
+              onTap: () => context.push('/test-vnpay'),
+            ),
+          ],
         ],
       ),
     );

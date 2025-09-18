@@ -154,4 +154,53 @@ class BookingRepository {
       throw Exception('Failed to process payment: $e');
     }
   }
+
+  // Create VNPay payment using new library-based service
+  Future<Map<String, dynamic>> createVNPayPayment({
+    required String bookingId,
+    String? bankCode,
+  }) async {
+    try {
+      final paymentData = <String, dynamic>{
+        'bookingId': bookingId,
+        'paymentMethod': 'vnpay',
+      };
+
+      if (bankCode != null && bankCode.isNotEmpty) {
+        paymentData['bankCode'] = bankCode;
+      }
+
+      final response = await _dioClient.post(
+        '/payments/vnpay/create',
+        data: paymentData,
+      );
+
+      if (response.data['success'] == true) {
+        return response.data;
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Tạo thanh toán VNPay thất bại',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to create VNPay payment: $e');
+    }
+  }
+
+  // Get VNPay bank list
+  Future<List<Map<String, dynamic>>> getVNPayBankList() async {
+    try {
+      final response = await _dioClient.get('/payments/banks');
+
+      if (response.data['success'] == true) {
+        return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Lấy danh sách ngân hàng thất bại',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to get bank list: $e');
+    }
+  }
 }

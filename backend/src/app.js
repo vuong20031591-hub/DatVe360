@@ -17,7 +17,7 @@ const logger = require('./utils/logger');
 // const notFound = require('./middleware/notFound');
 
 // Import routes
-let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes, seatRoutes, destinationRoutes;
+let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes, seatRoutes, destinationRoutes, paymentRoutes;
 try {
   authRoutes = require('./routes/auth');
   tripRoutes = require('./routes/trip');
@@ -25,6 +25,7 @@ try {
   scheduleRoutes = require('./routes/schedules');
   seatRoutes = require('./routes/seats');
   destinationRoutes = require('./routes/destinations');
+  paymentRoutes = require('./routes/payments');
 } catch (error) {
   console.error('Error importing routes:', error);
   process.exit(1);
@@ -94,6 +95,7 @@ app.use(`${API_PREFIX}/bookings`, bookingRoutes);
 app.use(`${API_PREFIX}/schedules`, scheduleRoutes);
 app.use(`${API_PREFIX}/seats`, seatRoutes);
 app.use(`${API_PREFIX}/destinations`, destinationRoutes);
+app.use(`${API_PREFIX}/payments`, paymentRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static('uploads'));

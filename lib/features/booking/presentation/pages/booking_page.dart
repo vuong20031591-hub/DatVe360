@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -315,25 +316,30 @@ class _BookingPageState extends ConsumerState<BookingPage> {
   }
 
   void _handlePaymentComplete(String bookingId) {
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đặt vé thành công! Mã đặt vé: $bookingId'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    // Use SchedulerBinding to ensure navigation happens after current frame
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Navigate away from payment page first
+        Navigator.of(context).popUntil((route) => route.isFirst);
 
-    // Navigate to booking success page or ticket details
-    _navigateToBookingSuccess(bookingId);
+        // Then show success dialog on home page
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            _navigateToBookingSuccess(bookingId);
+          }
+        });
+      }
+    });
   }
 
   void _navigateToBookingSuccess(String bookingId) {
+    if (!mounted) return;
+
     // Show success dialog with options
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.check_circle, color: Colors.green, size: 64),
         title: const Text('Đặt vé thành công!'),
         content: Column(
@@ -350,16 +356,21 @@ class _BookingPageState extends ConsumerState<BookingPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(
-                context,
-              ).popUntil((route) => route.isFirst); // Go to home
+              Navigator.of(dialogContext).pop(); // Close dialog
+              // Already at home page, just show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Đặt vé thành công! Mã đặt vé: $bookingId'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
             },
             child: const Text('Về trang chủ'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(dialogContext).pop(); // Close dialog
               _navigateToTicketDetails(bookingId);
             },
             child: const Text('Xem vé'),
@@ -370,13 +381,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
   }
 
   void _navigateToTicketDetails(String bookingId) {
-    // Navigate to manage bookings page to see the new booking
-    Navigator.of(context).popUntil((route) => route.isFirst);
-
-    // Navigate to manage bookings page
-    context.go('/manage');
-
-    // TODO: In future, navigate to specific ticket details page
-    // context.go('/tickets/$bookingId');
+    // Navigate to specific ticket details page
+    context.go('/ticket/$bookingId');
   }
 }

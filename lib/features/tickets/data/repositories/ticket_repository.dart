@@ -8,14 +8,44 @@ class TicketRepository {
 
   TicketRepository(this._dioClient);
 
-  // Get ticket by booking ID
+  // Get booking details by ID
+  Future<Map<String, dynamic>?> getBookingById(String bookingId) async {
+    try {
+      final response = await _dioClient.get('/bookings/$bookingId');
+      if (response.data['success'] == true) {
+        return response.data['data']['booking'];
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get booking: $e');
+    }
+  }
+
+  // Get tickets by booking ID
+  Future<List<Map<String, dynamic>>> getTicketsByBookingId(
+    String bookingId,
+  ) async {
+    try {
+      final response = await _dioClient.get('/bookings/$bookingId/tickets');
+      if (response.data['success'] == true) {
+        final tickets = response.data['data']['tickets'] as List;
+        return tickets.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      throw Exception('Failed to get tickets: $e');
+    }
+  }
+
+  // Get ticket by booking ID (legacy method - now uses booking + tickets)
   Future<Map<String, dynamic>?> getTicketByBookingId(String bookingId) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.get('/tickets/booking/$bookingId');
-      // return response.data;
+      final booking = await getBookingById(bookingId);
+      final tickets = await getTicketsByBookingId(bookingId);
 
-      // For now, return null
+      if (booking != null) {
+        return {'booking': booking, 'tickets': tickets};
+      }
       return null;
     } catch (e) {
       throw Exception('Failed to get ticket: $e');

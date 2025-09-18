@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/network/dio_client.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../data/repositories/booking_repository.dart';
 import '../../data/models/booking.dart';
 
 // Booking repository provider
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
-  return BookingRepository(DioClient.instance);
+  final dioClient = ref.watch(dioClientProvider);
+  return BookingRepository(dioClient);
 });
 
 // Booking state
@@ -68,18 +69,12 @@ class BookingNotifier extends Notifier<BookingState> {
       };
 
       final booking = await _repository.createBooking(bookingData);
-      
-      state = state.copyWith(
-        isLoading: false,
-        currentBooking: booking,
-      );
+
+      state = state.copyWith(isLoading: false, currentBooking: booking);
 
       return booking;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
       return null;
     }
   }
@@ -90,18 +85,12 @@ class BookingNotifier extends Notifier<BookingState> {
 
     try {
       final booking = await _repository.getBookingById(bookingId);
-      
-      state = state.copyWith(
-        isLoading: false,
-        currentBooking: booking,
-      );
+
+      state = state.copyWith(isLoading: false, currentBooking: booking);
 
       return booking;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
       return null;
     }
   }
@@ -112,18 +101,12 @@ class BookingNotifier extends Notifier<BookingState> {
 
     try {
       final bookings = await _repository.searchBookings(bookingId, email);
-      
-      state = state.copyWith(
-        isLoading: false,
-        userBookings: bookings,
-      );
+
+      state = state.copyWith(isLoading: false, userBookings: bookings);
 
       return bookings;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
       return [];
     }
   }
@@ -134,18 +117,12 @@ class BookingNotifier extends Notifier<BookingState> {
 
     try {
       final bookings = await _repository.getUserBookings(userId);
-      
-      state = state.copyWith(
-        isLoading: false,
-        userBookings: bookings,
-      );
+
+      state = state.copyWith(isLoading: false, userBookings: bookings);
 
       return bookings;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
       return [];
     }
   }
@@ -156,7 +133,7 @@ class BookingNotifier extends Notifier<BookingState> {
 
     try {
       final success = await _repository.cancelBooking(bookingId, reason);
-      
+
       if (success) {
         // Refresh user bookings
         // Note: This would need userId from auth state
@@ -166,10 +143,7 @@ class BookingNotifier extends Notifier<BookingState> {
       state = state.copyWith(isLoading: false);
       return success;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
   }
@@ -183,14 +157,46 @@ class BookingNotifier extends Notifier<BookingState> {
 
     try {
       final result = await _repository.processPayment(bookingId, paymentData);
-      
+
       state = state.copyWith(isLoading: false);
       return result;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
+    }
+  }
+
+  /// Create VNPay payment using new library-based service
+  Future<Map<String, dynamic>?> createVNPayPayment({
+    required String bookingId,
+    String? bankCode,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final result = await _repository.createVNPayPayment(
+        bookingId: bookingId,
+        bankCode: bankCode,
       );
+
+      state = state.copyWith(isLoading: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
+    }
+  }
+
+  /// Get VNPay bank list
+  Future<List<Map<String, dynamic>>?> getVNPayBankList() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final result = await _repository.getVNPayBankList();
+      state = state.copyWith(isLoading: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
       return null;
     }
   }

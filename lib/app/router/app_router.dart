@@ -20,6 +20,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../test_vnpay_page.dart';
 import '../../core/providers/locale_provider.dart';
 
 /// App router configuration using GoRouter
@@ -166,6 +167,13 @@ class AppRouter {
         path: '/settings',
         name: 'settings',
         builder: (context, state) => const SettingsPage(),
+      ),
+
+      // Test VNPay page
+      GoRoute(
+        path: '/test-vnpay',
+        name: 'testVNPay',
+        builder: (context, state) => const TestVNPayPage(),
       ),
     ],
     errorBuilder: (context, state) => AppErrorPage(error: state.error),

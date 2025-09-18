@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/vnpay_webview.dart';
 import '../providers/booking_provider.dart';
 import '../../data/models/booking.dart';
 
@@ -437,8 +438,9 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
         paymentMethod: _selectedPaymentMethod!,
       );
 
-      // Create booking via provider
       final bookingNotifier = ref.read(bookingProvider.notifier);
+
+      // Tạo booking trước
       final booking = await bookingNotifier.createBooking(
         scheduleId: bookingRequest.scheduleId,
         passengers: bookingRequest.passengers.map((p) => p.toJson()).toList(),
@@ -449,19 +451,38 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
       );
 
       if (booking != null) {
-        // Process payment
-        final paymentResult = await bookingNotifier.processPayment(booking.id, {
-          'payment_method': _selectedPaymentMethod,
-          'amount': _getTotalAmount(),
-        });
+        try {
+          // Xử lý thanh toán
+          if (_selectedPaymentMethod == 'vnpay') {
+            await _processVNPayPayment(booking.id);
+          } else {
+            // Các phương thức thanh toán khác
+            final paymentResult = await bookingNotifier.processPayment(
+              booking.id,
+              {
+                'payment_method': _selectedPaymentMethod,
+                'amount': _getTotalAmount(),
+              },
+            );
 
-        if (paymentResult != null && paymentResult['success'] == true) {
-          setState(() {
-            _isProcessing = false;
-          });
-          widget.onPaymentComplete(booking.id);
-        } else {
-          throw Exception('Thanh toán thất bại');
+            if (paymentResult != null && paymentResult['success'] == true) {
+              setState(() {
+                _isProcessing = false;
+              });
+              widget.onPaymentComplete(booking.id);
+            } else {
+              throw Exception('Thanh toán thất bại');
+            }
+          }
+        } catch (e) {
+          // Nếu thanh toán thất bại, xóa booking đã tạo
+          try {
+            await bookingNotifier.cancelBooking(booking.id, 'Payment failed');
+          } catch (cancelError) {
+            // Log error nhưng không làm gián đoạn flow
+            debugPrint('Lỗi khi hủy booking: $cancelError');
+          }
+          rethrow; // Ném lại lỗi gốc
         }
       } else {
         throw Exception('Tạo booking thất bại');
@@ -479,6 +500,128 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _processVNPayPayment(String bookingId) async {
+    try {
+      final bookingNotifier = ref.read(bookingProvider.notifier);
+
+      // Tạo VNPay payment URL
+      final paymentResult = await bookingNotifier.createVNPayPayment(
+        bookingId: bookingId,
+        bankCode: _getSelectedBankCode(),
+      );
+
+      if (paymentResult != null && paymentResult['success'] == true) {
+        final paymentUrl = paymentResult['data']['paymentUrl'] as String?;
+
+        if (paymentUrl != null) {
+          setState(() {
+            _isProcessing = false;
+          });
+
+          // Chuyển đến trang thanh toán VNPay
+          await _openVNPayPayment(paymentUrl, bookingId);
+        } else {
+          throw Exception('Không thể tạo URL thanh toán');
+        }
+      } else {
+        throw Exception('Tạo thanh toán VNPay thất bại');
+      }
+    } catch (e) {
+      throw Exception('Lỗi VNPay: ${e.toString()}');
+    }
+  }
+
+  Future<void> _openVNPayPayment(String paymentUrl, String bookingId) async {
+    if (!mounted) return;
+
+    try {
+      // Import VNPayWebView
+      final result = await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(
+          builder: (context) => VNPayWebView(
+            paymentUrl: paymentUrl,
+            onPaymentResult: (result) {
+              Navigator.of(context).pop(result);
+            },
+            onCancel: () {
+              Navigator.of(context).pop({
+                'success': false,
+                'message': 'Người dùng hủy thanh toán',
+                'cancelled': true,
+              });
+            },
+          ),
+        ),
+      );
+
+      if (result != null) {
+        await _handleVNPayResult(result, bookingId);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi mở thanh toán: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleVNPayResult(
+    Map<String, dynamic> result,
+    String bookingId,
+  ) async {
+    if (!mounted) return;
+
+    try {
+      if (result['success'] == true) {
+        // Payment successful - call the callback to handle navigation
+        widget.onPaymentComplete(bookingId);
+      } else if (result['cancelled'] == true) {
+        // User cancelled payment
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thanh toán đã bị hủy'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        // Payment failed
+        final message = result['message'] ?? 'Thanh toán thất bại';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xử lý kết quả thanh toán: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String? _getSelectedBankCode() {
+    // Map payment method to bank code for VNPay
+    switch (_selectedPaymentMethod) {
+      case 'vnpay':
+        return null; // Let user choose payment method on VNPay page
+      case 'banking':
+        return 'VNBANK';
+      case 'visa':
+        return 'VISA';
+      case 'mastercard':
+        return 'MASTERCARD';
+      default:
+        return null;
     }
   }
 
