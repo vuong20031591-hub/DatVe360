@@ -35,6 +35,8 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
   }
 
   void _loadSeatMap() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -52,9 +54,11 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
       // Handle error - fallback to mock data
       _seatGrid = _generateMockSeatMap();
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

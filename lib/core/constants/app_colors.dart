@@ -50,7 +50,6 @@ class AppColors {
   static const Color flightColor = Color(0xFF3B82F6);
   static const Color trainColor = Color(0xFF10B981);
   static const Color busColor = Color(0xFFF59E0B);
-  static const Color ferryColor = Color(0xFF8B5CF6);
 
   // Status colors
   static const Color availableColor = Color(0xFF22C55E);

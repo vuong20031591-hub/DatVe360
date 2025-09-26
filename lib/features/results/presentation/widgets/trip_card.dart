@@ -49,14 +49,19 @@ class TripCard extends StatelessWidget {
                         // Times
                         Row(
                           children: [
-                            Text(
-                              trip['departTime'],
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                trip['departTime'],
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6), // Giảm từ 8 xuống 6
                             Expanded(
+                              flex: 3,
                               child: Column(
                                 children: [
                                   Container(
@@ -68,17 +73,22 @@ class TripCard extends StatelessWidget {
                                     trip['duration'],
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                          .withValues(alpha: 0.6),
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              trip['arriveTime'],
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
+                            const SizedBox(width: 6), // Giảm từ 8 xuống 6
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                trip['arriveTime'],
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -89,12 +99,15 @@ class TripCard extends StatelessWidget {
                         // Route and stops
                         Row(
                           children: [
-                            Text(
-                              trip['route'],
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.7,
+                            Flexible(
+                              child: Text(
+                                trip['route'],
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(
+                                    0.7,
+                                  ),
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),

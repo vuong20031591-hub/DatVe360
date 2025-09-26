@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/offline_banner.dart';
 import '../../features/search/presentation/pages/home_search_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/search/presentation/pages/search_history_page.dart';
 import '../../features/results/presentation/pages/results_page.dart';
 import '../../features/trip_detail/presentation/pages/trip_detail_page.dart';
@@ -36,10 +37,17 @@ class AppRouter {
           return MainShell(child: child);
         },
         routes: [
-          // Home/Search page
+          // Home page
           GoRoute(
             path: '/',
             name: 'home',
+            builder: (context, state) => const HomePage(),
+          ),
+
+          // Search page
+          GoRoute(
+            path: '/search',
+            name: 'search',
             builder: (context, state) => const HomeSearchPage(),
           ),
 
@@ -216,11 +224,13 @@ class _MainShellState extends ConsumerState<MainShell>
   int _getIndexFromLocation(String location) {
     switch (location) {
       case '/':
-        return 0; // Home/Search
+        return 0; // Home
+      case '/search':
+        return 1; // Search
       case '/results':
-        return 1; // Results
+        return 2; // Results
       case '/profile':
-        return 2; // Profile
+        return 3; // Profile
       default:
         return 0; // Default to Home
     }
@@ -274,9 +284,12 @@ class _MainShellState extends ConsumerState<MainShell>
                     context.go('/');
                     break;
                   case 1:
-                    context.go('/results');
+                    context.go('/search');
                     break;
                   case 2:
+                    context.go('/results');
+                    break;
+                  case 3:
                     context.go('/profile');
                     break;
                 }
@@ -289,6 +302,15 @@ class _MainShellState extends ConsumerState<MainShell>
           backgroundColor: theme.colorScheme.surface,
           indicatorColor: theme.colorScheme.primaryContainer,
           destinations: [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, size: 24),
+              selectedIcon: Icon(
+                Icons.home,
+                size: 24,
+                color: theme.colorScheme.primary,
+              ),
+              label: locale.languageCode == 'vi' ? 'Trang chủ' : 'Home',
+            ),
             NavigationDestination(
               icon: Icon(Icons.search_outlined, size: 24),
               selectedIcon: Icon(

@@ -452,27 +452,39 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
 
       if (booking != null) {
         try {
-          // Xử lý thanh toán
-          if (_selectedPaymentMethod == 'vnpay') {
-            await _processVNPayPayment(booking.id);
-          } else {
-            // Các phương thức thanh toán khác
-            final paymentResult = await bookingNotifier.processPayment(
-              booking.id,
-              {
-                'payment_method': _selectedPaymentMethod,
-                'amount': _getTotalAmount(),
-              },
-            );
+          // Xử lý thanh toán theo phương thức được chọn
+          switch (_selectedPaymentMethod) {
+            case 'vnpay':
+              await _processVNPayPayment(booking.id);
+              break;
+            case 'momo':
+              await _processMoMoPayment(booking.id);
+              break;
+            case 'visa':
+            case 'mastercard':
+              await _processStripePayment(booking.id);
+              break;
+            case 'zalopay':
+              await _processZaloPayPayment(booking.id);
+              break;
+            default:
+              // Fallback cho các phương thức khác
+              final paymentResult = await bookingNotifier.processPayment(
+                booking.id,
+                {
+                  'payment_method': _selectedPaymentMethod,
+                  'amount': _getTotalAmount(),
+                },
+              );
 
-            if (paymentResult != null && paymentResult['success'] == true) {
-              setState(() {
-                _isProcessing = false;
-              });
-              widget.onPaymentComplete(booking.id);
-            } else {
-              throw Exception('Thanh toán thất bại');
-            }
+              if (paymentResult != null && paymentResult['success'] == true) {
+                setState(() {
+                  _isProcessing = false;
+                });
+                widget.onPaymentComplete(booking.id);
+              } else {
+                throw Exception('Thanh toán thất bại');
+              }
           }
         } catch (e) {
           // Nếu thanh toán thất bại, xóa booking đã tạo
@@ -606,6 +618,331 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _processMoMoPayment(String bookingId) async {
+    try {
+      final bookingNotifier = ref.read(bookingProvider.notifier);
+
+      // Tạo MoMo payment
+      final paymentResult = await bookingNotifier.createMoMoPayment(
+        bookingId: bookingId,
+      );
+
+      if (paymentResult != null && paymentResult['success'] == true) {
+        final paymentUrl = paymentResult['data']['paymentUrl'] as String?;
+        final deeplink = paymentResult['data']['deeplink'] as String?;
+
+        if (paymentUrl != null) {
+          setState(() {
+            _isProcessing = false;
+          });
+
+          // Chuyển đến trang thanh toán MoMo
+          await _openMoMoPayment(paymentUrl, deeplink, bookingId);
+        } else {
+          throw Exception('Không thể tạo URL thanh toán MoMo');
+        }
+      } else {
+        throw Exception('Tạo thanh toán MoMo thất bại');
+      }
+    } catch (e) {
+      throw Exception('Lỗi MoMo: ${e.toString()}');
+    }
+  }
+
+  Future<void> _openMoMoPayment(String paymentUrl, String? deeplink, String bookingId) async {
+    if (!mounted) return;
+
+    try {
+      // Hiển thị dialog với các tùy chọn thanh toán MoMo
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Thanh toán MoMo'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Chọn cách thanh toán MoMo:'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop({
+                    'success': true,
+                    'method': 'app',
+                    'message': 'Mở ứng dụng MoMo'
+                  });
+                },
+                child: const Text('Mở ứng dụng MoMo'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop({
+                    'success': true,
+                    'method': 'web',
+                    'message': 'Thanh toán qua web'
+                  });
+                },
+                child: const Text('Thanh toán qua web'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'success': false,
+                  'cancelled': true,
+                  'message': 'Người dùng hủy thanh toán'
+                });
+              },
+              child: const Text('Hủy'),
+            ),
+          ],
+        ),
+      );
+
+      if (result != null) {
+        await _handleMoMoResult(result, bookingId);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi mở thanh toán MoMo: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleMoMoResult(Map<String, dynamic> result, String bookingId) async {
+    try {
+      if (result['success'] == true && result['cancelled'] != true) {
+        // Simulate successful payment for demo
+        setState(() {
+          _isProcessing = false;
+        });
+        widget.onPaymentComplete(bookingId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thanh toán MoMo thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else if (result['cancelled'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thanh toán đã bị hủy'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        final message = result['message'] ?? 'Thanh toán MoMo thất bại';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xử lý kết quả MoMo: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _processStripePayment(String bookingId) async {
+    try {
+      final bookingNotifier = ref.read(bookingProvider.notifier);
+
+      // Tạo Stripe Payment Intent
+      final paymentResult = await bookingNotifier.createStripePayment(
+        bookingId: bookingId,
+      );
+
+      if (paymentResult != null && paymentResult['success'] == true) {
+        final clientSecret = paymentResult['data']['clientSecret'] as String?;
+        final publishableKey = paymentResult['data']['publishableKey'] as String?;
+
+        if (clientSecret != null && publishableKey != null) {
+          setState(() {
+            _isProcessing = false;
+          });
+
+          // Chuyển đến trang thanh toán Stripe
+          await _openStripePayment(clientSecret, publishableKey, bookingId);
+        } else {
+          throw Exception('Không thể tạo Payment Intent');
+        }
+      } else {
+        throw Exception('Tạo Payment Intent thất bại');
+      }
+    } catch (e) {
+      throw Exception('Lỗi Stripe: ${e.toString()}');
+    }
+  }
+
+  Future<void> _openStripePayment(String clientSecret, String publishableKey, String bookingId) async {
+    if (!mounted) return;
+
+    try {
+      // Hiển thị dialog mô phỏng thanh toán Stripe
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Thanh toán thẻ'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Nhập thông tin thẻ:'),
+              const SizedBox(height: 16),
+              const TextField(
+                decoration: InputDecoration(
+                  labelText: 'Số thẻ',
+                  hintText: '4242 4242 4242 4242',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'MM/YY',
+                        hintText: '12/25',
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'CVC',
+                        hintText: '123',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'success': false,
+                  'cancelled': true,
+                  'message': 'Người dùng hủy thanh toán'
+                });
+              },
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'success': true,
+                  'message': 'Thanh toán thành công'
+                });
+              },
+              child: const Text('Thanh toán'),
+            ),
+          ],
+        ),
+      );
+
+      if (result != null) {
+        await _handleStripeResult(result, bookingId);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi mở thanh toán Stripe: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleStripeResult(Map<String, dynamic> result, String bookingId) async {
+    try {
+      if (result['success'] == true && result['cancelled'] != true) {
+        setState(() {
+          _isProcessing = false;
+        });
+        widget.onPaymentComplete(bookingId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thanh toán thẻ thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else if (result['cancelled'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thanh toán đã bị hủy'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        final message = result['message'] ?? 'Thanh toán thẻ thất bại';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xử lý kết quả Stripe: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _processZaloPayPayment(String bookingId) async {
+    try {
+      // ZaloPay chưa được implement, hiển thị thông báo
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ZaloPay sẽ được hỗ trợ trong phiên bản tiếp theo'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+
+      setState(() {
+        _isProcessing = false;
+      });
+    } catch (e) {
+      throw Exception('Lỗi ZaloPay: ${e.toString()}');
     }
   }
 

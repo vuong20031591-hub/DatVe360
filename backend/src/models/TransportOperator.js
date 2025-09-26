@@ -17,7 +17,7 @@ const TransportOperatorSchema = new mongoose.Schema({
   },
   transportTypes: [{
     type: String,
-    enum: ['flight', 'train', 'bus', 'ferry'],
+    enum: ['flight', 'train', 'bus'],
     required: true
   }],
   contactInfo: {
@@ -42,8 +42,7 @@ const TransportOperatorSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-TransportOperatorSchema.index({ code: 1 });
+// Indexes (code already has unique index from schema definition)
 TransportOperatorSchema.index({ transportTypes: 1 });
 TransportOperatorSchema.index({ isActive: 1, transportTypes: 1 });
 

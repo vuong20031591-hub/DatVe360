@@ -7,7 +7,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String baseUrl = 'http://192.168.100.245:5000/api/v1';
+  static const String baseUrl = 'http://172.28.81.32:3000/api/v1';
   static const String prodBaseUrl = 'https://api.datve360.com/v1';
   static const Duration requestTimeout = Duration(seconds: 30);
   static const Duration cacheTimeout = Duration(minutes: 5);
@@ -78,8 +78,7 @@ class AppConstants {
 enum TransportMode {
   flight('flight', 'Máy bay'),
   train('train', 'Tàu hỏa'),
-  bus('bus', 'Xe khách'),
-  ferry('ferry', 'Phà');
+  bus('bus', 'Xe khách');
 
   const TransportMode(this.value, this.displayName);
   final String value;

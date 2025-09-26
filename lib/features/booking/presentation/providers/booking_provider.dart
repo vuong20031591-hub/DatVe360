@@ -187,6 +187,44 @@ class BookingNotifier extends Notifier<BookingState> {
     }
   }
 
+  /// Create MoMo payment
+  Future<Map<String, dynamic>?> createMoMoPayment({
+    required String bookingId,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final result = await _repository.createMoMoPayment(
+        bookingId: bookingId,
+      );
+
+      state = state.copyWith(isLoading: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
+    }
+  }
+
+  /// Create Stripe payment (Visa/MasterCard)
+  Future<Map<String, dynamic>?> createStripePayment({
+    required String bookingId,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final result = await _repository.createStripePayment(
+        bookingId: bookingId,
+      );
+
+      state = state.copyWith(isLoading: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
+    }
+  }
+
   /// Get VNPay bank list
   Future<List<Map<String, dynamic>>?> getVNPayBankList() async {
     state = state.copyWith(isLoading: true, error: null);

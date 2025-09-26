@@ -459,8 +459,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         return Icons.train;
       case 'bus':
         return Icons.directions_bus;
-      case 'ferry':
-        return Icons.directions_boat;
       default:
         return Icons.search;
     }
@@ -474,8 +472,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         return AppColors.trainColor;
       case 'bus':
         return AppColors.busColor;
-      case 'ferry':
-        return AppColors.ferryColor;
       default:
         return Colors.grey;
     }

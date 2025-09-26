@@ -133,8 +133,6 @@ class DestinationCard extends StatelessWidget {
         return Icons.train;
       case TransportMode.bus:
         return Icons.directions_bus;
-      case TransportMode.ferry:
-        return Icons.directions_boat;
     }
   }
 
@@ -146,8 +144,6 @@ class DestinationCard extends StatelessWidget {
         return AppColors.trainColor;
       case TransportMode.bus:
         return AppColors.busColor;
-      case TransportMode.ferry:
-        return AppColors.ferryColor;
     }
   }
 }

@@ -187,6 +187,60 @@ class BookingRepository {
     }
   }
 
+  // Create MoMo payment
+  Future<Map<String, dynamic>> createMoMoPayment({
+    required String bookingId,
+  }) async {
+    try {
+      final paymentData = <String, dynamic>{
+        'bookingId': bookingId,
+        'paymentMethod': 'momo',
+      };
+
+      final response = await _dioClient.post(
+        '/payments/momo/create',
+        data: paymentData,
+      );
+
+      if (response.data['success'] == true) {
+        return response.data;
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Tạo thanh toán MoMo thất bại',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to create MoMo payment: $e');
+    }
+  }
+
+  // Create Stripe payment (Visa/MasterCard)
+  Future<Map<String, dynamic>> createStripePayment({
+    required String bookingId,
+  }) async {
+    try {
+      final paymentData = <String, dynamic>{
+        'bookingId': bookingId,
+        'paymentMethod': 'stripe',
+      };
+
+      final response = await _dioClient.post(
+        '/payments/stripe/create',
+        data: paymentData,
+      );
+
+      if (response.data['success'] == true) {
+        return response.data;
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Tạo Payment Intent thất bại',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to create Stripe payment: $e');
+    }
+  }
+
   // Get VNPay bank list
   Future<List<Map<String, dynamic>>> getVNPayBankList() async {
     try {

@@ -66,18 +66,18 @@ class ProfilePage extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        if (authState.isAuthenticated) {
-                          _showLogoutDialog(context, ref);
-                        } else {
-                          context.push('/login');
-                        }
-                      },
-                      child: Text(
-                        authState.isAuthenticated ? 'Đăng xuất' : 'Đăng nhập',
+                    if (authState.isAuthenticated) ...[
+                      IconButton(
+                        onPressed: () => context.push('/edit-profile'),
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Chỉnh sửa hồ sơ',
                       ),
-                    ),
+                    ] else ...[
+                      TextButton(
+                        onPressed: () => context.push('/login'),
+                        child: const Text('Đăng nhập'),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -86,6 +86,18 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Menu sections
+            if (authState.isAuthenticated)
+              _buildMenuSection(context, 'Tài khoản', [
+                _MenuItem(
+                  icon: Icons.person_outline,
+                  title: 'Chỉnh sửa hồ sơ',
+                  subtitle: 'Cập nhật thông tin cá nhân',
+                  onTap: () => context.push('/edit-profile'),
+                ),
+              ]),
+
+            if (authState.isAuthenticated) const SizedBox(height: 16),
+
             _buildMenuSection(context, localizations.bookingAndManagement, [
               _MenuItem(
                 icon: Icons.history,
@@ -144,6 +156,24 @@ class ProfilePage extends ConsumerWidget {
             ),
 
             const SizedBox(height: 32),
+
+            // Logout button at bottom (only when authenticated)
+            if (authState.isAuthenticated) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showLogoutDialog(context, ref),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Đăng xuất'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
         ),
       ),

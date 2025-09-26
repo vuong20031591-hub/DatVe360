@@ -37,23 +37,29 @@ class _VNPayWebViewState extends State<VNPayWebView> {
             // Update loading progress if needed
           },
           onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-              _error = null;
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = true;
+                _error = null;
+              });
+            }
           },
           onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
             _handleUrlChange(url);
             _checkForPaymentResult(url);
           },
           onWebResourceError: (WebResourceError error) {
-            setState(() {
-              _isLoading = false;
-              _error = 'Lỗi tải trang: ${error.description}';
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _error = 'Lỗi tải trang: ${error.description}';
+              });
+            }
           },
           onNavigationRequest: (NavigationRequest request) {
             _handleUrlChange(request.url);

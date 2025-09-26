@@ -279,8 +279,6 @@ class OptimizedTripCard extends StatelessWidget {
         return AppColors.trainColor;
       case 'bus':
         return AppColors.busColor;
-      case 'ferry':
-        return AppColors.ferryColor;
       default:
         return Colors.grey;
     }

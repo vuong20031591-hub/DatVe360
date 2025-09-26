@@ -180,8 +180,6 @@ class RealSearchRepository {
         return 'train';
       case TransportMode.bus:
         return 'bus';
-      case TransportMode.ferry:
-        return 'ferry';
     }
   }
 }

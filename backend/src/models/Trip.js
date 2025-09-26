@@ -76,7 +76,7 @@ const tripSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Phương thức vận chuyển là bắt buộc'],
     enum: {
-      values: ['flight', 'train', 'bus', 'ferry'],
+      values: ['flight', 'train', 'bus'],
       message: 'Phương thức vận chuyển không hợp lệ'
     },
     index: true

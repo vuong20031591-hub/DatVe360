@@ -40,6 +40,8 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
   }
 
   void _loadTripDetail() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -57,9 +59,11 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
       _tripData = null;
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override

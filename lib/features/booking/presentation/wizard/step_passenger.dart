@@ -293,7 +293,9 @@ class _StepPassengerState extends State<StepPassenger> {
                           Row(
                             children: [
                               Expanded(
+                                flex: 2, // Tăng flex để có thêm không gian
                                 child: DropdownButtonFormField<String>(
+                                  isExpanded: true, // Thêm để tránh overflow
                                   initialValue:
                                       _passengerControllers[index]['documentType']!
                                           .text
@@ -329,8 +331,9 @@ class _StepPassengerState extends State<StepPassenger> {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 8), // Giảm từ 12 xuống 8
                               Expanded(
+                                flex: 3, // Tăng flex cho số giấy tờ
                                 child: AppTextField(
                                   controller:
                                       _passengerControllers[index]['documentNumber']!,
@@ -370,7 +373,9 @@ class _StepPassengerState extends State<StepPassenger> {
                           Row(
                             children: [
                               Expanded(
+                                flex: 3, // Tăng flex cho loại hành khách
                                 child: DropdownButtonFormField<String>(
+                                  isExpanded: true, // Thêm để tránh overflow
                                   initialValue:
                                       _passengerControllers[index]['type']!
                                           .text
@@ -406,9 +411,11 @@ class _StepPassengerState extends State<StepPassenger> {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 8), // Giảm từ 12 xuống 8
                               Expanded(
+                                flex: 2, // Giảm flex cho giới tính (text ngắn hơn)
                                 child: DropdownButtonFormField<String>(
+                                  isExpanded: true, // Thêm để tránh overflow
                                   initialValue:
                                       _passengerControllers[index]['gender']!
                                           .text

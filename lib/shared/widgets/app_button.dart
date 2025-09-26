@@ -107,8 +107,14 @@ class AppButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: _getIconSize()),
-            const SizedBox(width: 8),
-            Text(text),
+            const SizedBox(width: 6), // Giảm từ 8 xuống 6
+            Flexible( // Thêm Flexible để tránh overflow
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis, // Thêm ellipsis
+                maxLines: 1, // Giới hạn 1 dòng
+              ),
+            ),
           ],
         ),
       );
