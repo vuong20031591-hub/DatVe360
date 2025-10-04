@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Phone gradients -->
+    <linearGradient id="phoneGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F8FAFC;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Screen glow effect -->
+    <filter id="screenGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- QR code scanner effect -->
+    <filter id="scannerEffect" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Phone shadow -->
+    <filter id="phoneShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="4" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="150" cy="150" r="140" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
+  
+  <!-- Mobile Phone with 3D effect -->
+  <g id="mobilePhone" filter="url(#phoneShadow)">
+    <rect x="90" y="50" width="120" height="200" rx="20" fill="url(#phoneGradient)" stroke="#E5E7EB" stroke-width="2"/>
+    <rect x="100" y="70" width="100" height="160" rx="8" fill="#F9FAFB" filter="url(#screenGlow)"/>
+
+    <!-- Phone tilt animation -->
+    <animateTransform attributeName="transform" type="rotate"
+                      values="0 150 150; 2 150 150; 0 150 150" dur="3s" repeatCount="indefinite"/>
+  </g>
+  
+  <!-- Screen Header -->
+  <rect x="105" y="75" width="90" height="12" rx="6" fill="#8B5CF6"/>
+  <text x="150" y="84" text-anchor="middle" fill="white" font-size="6" font-family="Arial">Vé điện tử</text>
+  
+  <!-- Ticket Content -->
+  <rect x="105" y="95" width="90" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Ticket Header -->
+  <rect x="110" y="100" width="80" height="15" rx="3" fill="#F8FAFC"/>
+  <text x="150" y="110" text-anchor="middle" fill="#8B5CF6" font-size="7" font-family="Arial">BOARDING PASS</text>
+  
+  <!-- Flight Info -->
+  <text x="115" y="125" fill="#374151" font-size="6" font-family="Arial">HAN → SGN</text>
+  <text x="180" y="125" fill="#6B7280" font-size="5" font-family="Arial">VN123</text>
+  
+  <text x="115" y="135" fill="#6B7280" font-size="5" font-family="Arial">29/09/2025</text>
+  <text x="165" y="135" fill="#6B7280" font-size="5" font-family="Arial">14:30</text>
+  
+  <!-- Passenger Info -->
+  <text x="115" y="145" fill="#6B7280" font-size="4" font-family="Arial">NGUYEN VAN A</text>
+  <text x="115" y="152" fill="#6B7280" font-size="4" font-family="Arial">Seat: 12A</text>
+  
+  <!-- QR Code with scanner effect -->
+  <g id="qrCode">
+    <rect x="130" y="160" width="40" height="40" rx="4" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#scannerEffect)"/>
+
+    <!-- Scanner line animation -->
+    <line x1="130" y1="160" x2="170" y2="160" stroke="#8B5CF6" stroke-width="2" opacity="0.8">
+      <animateTransform attributeName="transform" type="translate"
+                        values="0,0; 0,40; 0,0" dur="2s" repeatCount="indefinite"/>
+    </line>
+  </g>
+  
+  <!-- QR Code Pattern -->
+  <g transform="translate(135, 165)">
+    <!-- QR Code squares pattern -->
+    <rect x="0" y="0" width="3" height="3" fill="#000"/>
+    <rect x="4" y="0" width="3" height="3" fill="#000"/>
+    <rect x="8" y="0" width="3" height="3" fill="#000"/>
+    <rect x="16" y="0" width="3" height="3" fill="#000"/>
+    <rect x="20" y="0" width="3" height="3" fill="#000"/>
+    <rect x="24" y="0" width="3" height="3" fill="#000"/>
+    <rect x="28" y="0" width="3" height="3" fill="#000"/>
+    
+    <rect x="0" y="4" width="3" height="3" fill="#000"/>
+    <rect x="8" y="4" width="3" height="3" fill="#000"/>
+    <rect x="12" y="4" width="3" height="3" fill="#000"/>
+    <rect x="20" y="4" width="3" height="3" fill="#000"/>
+    <rect x="28" y="4" width="3" height="3" fill="#000"/>
+    
+    <rect x="0" y="8" width="3" height="3" fill="#000"/>
+    <rect x="4" y="8" width="3" height="3" fill="#000"/>
+    <rect x="8" y="8" width="3" height="3" fill="#000"/>
+    <rect x="16" y="8" width="3" height="3" fill="#000"/>
+    <rect x="24" y="8" width="3" height="3" fill="#000"/>
+    <rect x="28" y="8" width="3" height="3" fill="#000"/>
+    
+    <rect x="4" y="12" width="3" height="3" fill="#000"/>
+    <rect x="12" y="12" width="3" height="3" fill="#000"/>
+    <rect x="16" y="12" width="3" height="3" fill="#000"/>
+    <rect x="20" y="12" width="3" height="3" fill="#000"/>
+    
+    <rect x="0" y="16" width="3" height="3" fill="#000"/>
+    <rect x="8" y="16" width="3" height="3" fill="#000"/>
+    <rect x="12" y="16" width="3" height="3" fill="#000"/>
+    <rect x="24" y="16" width="3" height="3" fill="#000"/>
+    <rect x="28" y="16" width="3" height="3" fill="#000"/>
+    
+    <rect x="0" y="20" width="3" height="3" fill="#000"/>
+    <rect x="4" y="20" width="3" height="3" fill="#000"/>
+    <rect x="16" y="20" width="3" height="3" fill="#000"/>
+    <rect x="20" y="20" width="3" height="3" fill="#000"/>
+    <rect x="28" y="20" width="3" height="3" fill="#000"/>
+    
+    <rect x="8" y="24" width="3" height="3" fill="#000"/>
+    <rect x="12" y="24" width="3" height="3" fill="#000"/>
+    <rect x="16" y="24" width="3" height="3" fill="#000"/>
+    <rect x="24" y="24" width="3" height="3" fill="#000"/>
+    
+    <rect x="0" y="28" width="3" height="3" fill="#000"/>
+    <rect x="4" y="28" width="3" height="3" fill="#000"/>
+    <rect x="8" y="28" width="3" height="3" fill="#000"/>
+    <rect x="16" y="28" width="3" height="3" fill="#000"/>
+    <rect x="20" y="28" width="3" height="3" fill="#000"/>
+    <rect x="24" y="28" width="3" height="3" fill="#000"/>
+    <rect x="28" y="28" width="3" height="3" fill="#000"/>
+  </g>
+  
+  <!-- Download/Share Icons -->
+  <g transform="translate(110, 210)">
+    <!-- Download Icon -->
+    <circle cx="10" cy="10" r="8" fill="#8B5CF6" opacity="0.2"/>
+    <path d="M6 8 L10 12 L14 8" stroke="#8B5CF6" stroke-width="1.5" fill="none"/>
+    <path d="M10 4 L10 12" stroke="#8B5CF6" stroke-width="1.5"/>
+    
+    <!-- Share Icon -->
+    <circle cx="30" cy="10" r="8" fill="#8B5CF6" opacity="0.2"/>
+    <circle cx="28" cy="8" r="1.5" fill="#8B5CF6"/>
+    <circle cx="32" cy="8" r="1.5" fill="#8B5CF6"/>
+    <circle cx="30" cy="12" r="1.5" fill="#8B5CF6"/>
+    <path d="M28 8 L30 12" stroke="#8B5CF6" stroke-width="1"/>
+    <path d="M32 8 L30 12" stroke="#8B5CF6" stroke-width="1"/>
+    
+    <!-- PDF Icon -->
+    <circle cx="50" cy="10" r="8" fill="#8B5CF6" opacity="0.2"/>
+    <rect x="46" y="6" width="8" height="8" rx="1" fill="none" stroke="#8B5CF6" stroke-width="1"/>
+    <text x="50" y="12" text-anchor="middle" fill="#8B5CF6" font-size="4" font-family="Arial">PDF</text>
+    
+    <!-- Email Icon -->
+    <circle cx="70" cy="10" r="8" fill="#8B5CF6" opacity="0.2"/>
+    <rect x="66" y="7" width="8" height="6" rx="1" fill="none" stroke="#8B5CF6" stroke-width="1"/>
+    <path d="M66 8 L70 11 L74 8" stroke="#8B5CF6" stroke-width="1" fill="none"/>
+  </g>
+  
+  <!-- Floating Elements -->
+  <!-- Email notification -->
+  <g transform="translate(40, 100)">
+    <rect x="0" y="0" width="30" height="20" rx="4" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+    <path d="M2 3 L15 12 L28 3" stroke="#8B5CF6" stroke-width="1" fill="none"/>
+    <circle cx="25" cy="5" r="3" fill="#EF4444"/>
+    <text x="25" y="7" text-anchor="middle" fill="white" font-size="4">!</text>
+  </g>
+  
+  <!-- Cloud sync -->
+  <g transform="translate(220, 120)">
+    <path d="M5 15 C2 15 0 13 0 10 C0 7 2 5 5 5 C6 2 9 0 12 0 C16 0 19 3 19 7 C21 7 23 9 23 12 C23 15 21 17 18 17 L5 17 Z" fill="#8B5CF6" opacity="0.3"/>
+    <path d="M8 12 L12 8 L16 12" stroke="#8B5CF6" stroke-width="1.5" fill="none"/>
+    <path d="M12 8 L12 15" stroke="#8B5CF6" stroke-width="1.5"/>
+  </g>
+  
+  <!-- Success checkmark -->
+  <g transform="translate(230, 200)">
+    <circle cx="15" cy="15" r="12" fill="#10B981" opacity="0.2"/>
+    <path d="M8 15 L12 19 L22 9" stroke="#10B981" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Decorative dots -->
+  <circle cx="60" cy="80" r="3" fill="#8B5CF6" opacity="0.3"/>
+  <circle cx="250" cy="160" r="4" fill="#10B981" opacity="0.3"/>
+  <circle cx="40" cy="220" r="2" fill="#F59E0B" opacity="0.3"/>
+</svg>

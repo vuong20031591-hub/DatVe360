@@ -9,6 +9,7 @@ import 'app/router/app_router.dart';
 import 'core/providers/app_providers.dart';
 import 'core/providers/theme_provider.dart' as theme_providers;
 import 'core/providers/locale_provider.dart' as locale_providers;
+
 import 'core/services/settings_service.dart';
 import 'core/services/cache_service.dart';
 import 'core/services/connectivity_service.dart';
@@ -17,6 +18,8 @@ import 'core/storage/storage_service.dart';
 import 'core/constants/app_constants.dart';
 import 'core/i18n/l10n.dart' as app_l10n;
 import 'features/auth/data/repositories/real_auth_repository.dart';
+import 'features/auth/providers/google_auth_provider.dart';
+import 'core/services/google_sign_in_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +59,12 @@ void main() async {
   final storageService = StorageService.instance;
   await storageService.init();
 
+  // Initialize Google Sign-In Service
+  GoogleSignInService().initialize(
+    // Thay YOUR_WEB_CLIENT_ID bằng Web Client ID thực tế từ Google Cloud Console
+    webClientId: 'YOUR_WEB_CLIENT_ID',
+  );
+
   runApp(
     ProviderScope(
       overrides: [
@@ -78,6 +87,7 @@ class DatVe360App extends ConsumerWidget {
     final locale = ref.watch(locale_providers.localeProvider);
     final lightTheme = ref.watch(theme_providers.lightThemeProvider);
     final darkTheme = ref.watch(theme_providers.darkThemeProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
@@ -102,7 +112,7 @@ class DatVe360App extends ConsumerWidget {
       ],
 
       // Router
-      routerConfig: AppRouter.router,
+      routerConfig: router,
     );
   }
 }

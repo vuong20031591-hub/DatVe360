@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
-
 
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
@@ -60,10 +60,14 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
       appBar: AppBar(
         title: Row(
           children: [
-            Icon(
-              Icons.flight_takeoff,
-              color: theme.colorScheme.primary,
-              size: 24,
+            SvgPicture.asset(
+              'assets/images/logo_datve360.svg',
+              height: 24,
+              width: 24,
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.primary,
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -178,12 +182,6 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     );
   }
 
-
-
-
-
-
-
   void _handleSearch(Map<String, dynamic> searchData) {
     print('DEBUG: HomeSearchPage._handleSearch called with: $searchData');
 
@@ -212,12 +210,6 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     context.go('/results');
     print('DEBUG: Navigated to results page');
   }
-
-
-
-
-
-
 
   void _selectDestination(Map<String, String> destination) {
     // TODO: Pre-fill search form with destination
@@ -315,6 +307,4 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     // This should never be reached since all enum values are covered
     return [];
   }
-
-
 }

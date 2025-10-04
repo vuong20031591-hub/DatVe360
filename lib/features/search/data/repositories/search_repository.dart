@@ -31,21 +31,35 @@ class SearchRepository {
         );
       }
 
-      // TODO: Implement real API call
-      final trips = <Trip>[];
+      // Make API call to search schedules
+      final response = await _dioClient.get(
+        '/schedules/search',
+        queryParameters: {
+          'from': query.from,
+          'to': query.to,
+          'departDate': query.departDate.toIso8601String(),
+          'mode': query.mode.value,
+          'passengers': query.passengers.total,
+        },
+      );
 
-      // Cache the results
-      final tripsJson = trips.map((trip) => trip.toJson()).toList();
-      await _cacheService.cacheSearchResults(cacheKey, tripsJson);
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> schedulesData =
+            response.data['data']['schedules'] ?? [];
 
-      return trips;
+        // Convert schedules to Trip objects
+        final trips = schedulesData.map((json) => Trip.fromJson(json)).toList();
 
-      // TODO: Implement real API call
-      // final response = await _dioClient.post('/search', data: query.toJson());
-      // final List<dynamic> data = response.data['trips'];
-      // final trips = data.map((json) => Trip.fromJson(json)).toList();
-      // await _cacheService.cacheSearchResults(cacheKey, data);
-      // return trips;
+        // Cache the results
+        final tripsJson = trips.map((trip) => trip.toJson()).toList();
+        await _cacheService.cacheSearchResults(cacheKey, tripsJson);
+
+        return trips;
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Không tìm thấy chuyến đi phù hợp',
+        );
+      }
     } catch (e) {
       throw Exception('Failed to search trips: $e');
     }
@@ -60,10 +74,28 @@ class SearchRepository {
         return cachedDestinations;
       }
 
-      // TODO: Implement real API call
-      return <Map<String, dynamic>>[];
+      // If offline and no cache, return empty
+      if (!_connectivityService.isOnline) {
+        return <Map<String, dynamic>>[];
+      }
+
+      // Make API call to get popular destinations
+      final response = await _dioClient.get('/destinations/popular');
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> destinationsData = response.data['data'] ?? [];
+        final destinations = List<Map<String, dynamic>>.from(destinationsData);
+
+        // Cache the results
+        await _cacheService.cacheDestinations(destinations);
+
+        return destinations;
+      } else {
+        return <Map<String, dynamic>>[];
+      }
     } catch (e) {
-      throw Exception('Failed to load popular destinations: $e');
+      // Return empty list on error instead of throwing
+      return <Map<String, dynamic>>[];
     }
   }
 
@@ -76,10 +108,28 @@ class SearchRepository {
         return cachedAirports;
       }
 
-      // TODO: Implement real API call
-      return <Map<String, dynamic>>[];
+      // If offline and no cache, return empty
+      if (!_connectivityService.isOnline) {
+        return <Map<String, dynamic>>[];
+      }
+
+      // Make API call to get all destinations (airports, stations, ports)
+      final response = await _dioClient.get('/destinations');
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> destinationsData = response.data['data'] ?? [];
+        final airports = List<Map<String, dynamic>>.from(destinationsData);
+
+        // Cache the results
+        await _cacheService.cacheAirports(airports);
+
+        return airports;
+      } else {
+        return <Map<String, dynamic>>[];
+      }
     } catch (e) {
-      throw Exception('Failed to load airports: $e');
+      // Return empty list on error instead of throwing
+      return <Map<String, dynamic>>[];
     }
   }
 

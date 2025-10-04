@@ -1,4 +1,18 @@
 require('dotenv').config();
+
+// Handle unhandled promise rejections early
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions early
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,23 +23,32 @@ const { Server } = require('socket.io');
 
 // Import configurations
 const connectDB = require('./config/database');
-// const connectRedis = require('./config/redis'); // Commented out for now
+const redisClient = require('./config/redis');
 const logger = require('./utils/logger');
 
-// Import middleware - Temporarily commented out for testing
-// const errorHandler = require('./middleware/errorHandler');
-// const notFound = require('./middleware/notFound');
+// Import middleware
+const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 // Import routes
-let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes, seatRoutes, destinationRoutes, paymentRoutes, adminUsersRoutes, adminTicketsRoutes, adminCategoriesRoutes, adminSchedulesRoutes, adminSchedulesByTypeRoutes, adminBookingsRoutes, adminPaymentsRoutes, adminReportsRoutes;
+let authRoutes, tripRoutes, bookingRoutes, scheduleRoutes, seatRoutes, destinationRoutes, paymentRoutes, ticketRoutes, adminUsersRoutes, adminTicketsRoutes, adminCategoriesRoutes, adminSchedulesRoutes, adminSchedulesByTypeRoutes, adminBookingsRoutes, adminPaymentsRoutes, adminReportsRoutes;
 try {
+  console.log('Loading routes...');
   authRoutes = require('./routes/auth');
+  console.log('Auth routes loaded');
   tripRoutes = require('./routes/trip');
+  console.log('Trip routes loaded');
   bookingRoutes = require('./routes/bookings');
+  console.log('Booking routes loaded');
   scheduleRoutes = require('./routes/schedules');
+  console.log('Schedule routes loaded');
   seatRoutes = require('./routes/seats');
+  console.log('Seat routes loaded');
   destinationRoutes = require('./routes/destinations');
+  console.log('Destination routes loaded');
   paymentRoutes = require('./routes/payments');
+  console.log('Payment routes loaded');
+  ticketRoutes = require('./routes/tickets');
+  console.log('Ticket routes loaded');
   adminUsersRoutes = require('./routes/admin/users');
   adminTicketsRoutes = require('./routes/admin/tickets');
   adminCategoriesRoutes = require('./routes/admin/categories');
@@ -51,9 +74,7 @@ const io = new Server(server, {
   }
 });
 
-// Connect to databases
-connectDB();
-// connectRedis(); // Commented out for now
+// Database connections will be initialized before starting server
 
 // Security middleware
 app.use(helmet());
@@ -104,6 +125,7 @@ app.use(`${API_PREFIX}/schedules`, scheduleRoutes);
 app.use(`${API_PREFIX}/seats`, seatRoutes);
 app.use(`${API_PREFIX}/destinations`, destinationRoutes);
 app.use(`${API_PREFIX}/payments`, paymentRoutes);
+app.use(`${API_PREFIX}/tickets`, ticketRoutes);
 app.use(`${API_PREFIX}/admin/users`, adminUsersRoutes);
 app.use(`${API_PREFIX}/admin/tickets`, adminTicketsRoutes);
 app.use(`${API_PREFIX}/admin/categories`, adminCategoriesRoutes);
@@ -116,17 +138,33 @@ app.use(`${API_PREFIX}/admin/reports`, adminReportsRoutes);
 // Static files for uploads
 app.use('/uploads', express.static('uploads'));
 
-// Error handling middleware - Temporarily commented out for testing
-// app.use(notFound);
-// app.use(errorHandler);
+// Error handling middleware
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Server started on port ${PORT} in ${process.env.NODE_ENV} mode`);
-  logger.info(`🌐 API available at http://localhost:${PORT}${API_PREFIX}`);
-  logger.info(`🌐 API available at http://192.168.100.245:${PORT}${API_PREFIX}`);
-});
+// Start server function
+const startServer = async () => {
+  try {
+    // Connect to databases first
+    await connectDB();
+    await redisClient.connect();
+
+    // Then start the server
+    server.listen(PORT, '0.0.0.0', () => {
+      logger.info(`🚀 Server started on port ${PORT} in ${process.env.NODE_ENV} mode`);
+      logger.info(`🌐 API available at http://localhost:${PORT}${API_PREFIX}`);
+      logger.info(`🌐 API available at http://192.168.100.245:${PORT}${API_PREFIX}`);
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -134,6 +172,20 @@ process.on('SIGTERM', () => {
   server.close(() => {
     logger.info('Process terminated');
   });
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Unhandled Rejection:', reason);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
 });
 
 module.exports = app;

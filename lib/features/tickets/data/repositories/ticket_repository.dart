@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
+import '../models/ticket.dart';
 
 class TicketRepository {
   // ignore: unused_field
@@ -78,14 +79,21 @@ class TicketRepository {
   // Send ticket via email
   Future<bool> sendTicketEmail(String bookingId, String email) async {
     try {
-      // TODO: Implement real email sending
-      // final response = await _dioClient.post('/tickets/$bookingId/email',
-      //   data: {'email': email});
-      // return response.data['success'] ?? false;
+      final response = await _dioClient.post(
+        '/tickets/$bookingId/email',
+        data: {'email': email},
+      );
 
-      // For now, simulate email sending
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return true;
+      } else {
+        throw Exception(response.data['message'] ?? 'Gửi email thất bại');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Không tìm thấy vé');
+      }
+      throw Exception('Lỗi kết nối: ${e.message}');
     } catch (e) {
       throw Exception('Failed to send ticket email: $e');
     }
@@ -94,12 +102,20 @@ class TicketRepository {
   // Get ticket history for user
   Future<List<Map<String, dynamic>>> getTicketHistory(String userId) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.get('/users/$userId/tickets');
-      // return List<Map<String, dynamic>>.from(response.data['tickets']);
+      final response = await _dioClient.get('/tickets/history/$userId');
 
-      // For now, return empty list
-      return [];
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> ticketsData =
+            response.data['data']['tickets'] ?? [];
+        return List<Map<String, dynamic>>.from(ticketsData);
+      } else {
+        return [];
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return []; // No tickets found
+      }
+      throw Exception('Lỗi kết nối: ${e.message}');
     } catch (e) {
       throw Exception('Failed to get ticket history: $e');
     }
@@ -108,13 +124,24 @@ class TicketRepository {
   // Validate ticket QR code
   Future<Map<String, dynamic>> validateTicket(String qrData) async {
     try {
-      // TODO: Implement real ticket validation
-      // final response = await _dioClient.post('/tickets/validate',
-      //   data: {'qr_data': qrData});
-      // return response.data;
+      final response = await _dioClient.post(
+        '/tickets/validate',
+        data: {'qrData': qrData},
+      );
 
-      // For now, return invalid
-      return {'valid': false, 'error': 'Validation not implemented'};
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return response.data['data'];
+      } else {
+        return {
+          'valid': false,
+          'error': response.data['message'] ?? 'Vé không hợp lệ',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'valid': false,
+        'error': e.response?.data['message'] ?? 'Lỗi xác thực vé',
+      };
     } catch (e) {
       throw Exception('Failed to validate ticket: $e');
     }
@@ -123,14 +150,23 @@ class TicketRepository {
   // Check-in passenger
   Future<bool> checkInPassenger(String bookingId, String passengerId) async {
     try {
-      // TODO: Implement real check-in
-      // final response = await _dioClient.post('/tickets/$bookingId/checkin',
-      //   data: {'passenger_id': passengerId});
-      // return response.data['success'] ?? false;
+      final response = await _dioClient.post(
+        '/tickets/$bookingId/checkin',
+        data: {'passengerId': passengerId},
+      );
 
-      // For now, simulate check-in
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return true;
+      } else {
+        throw Exception(response.data['message'] ?? 'Check-in thất bại');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Không tìm thấy vé hoặc hành khách');
+      } else if (e.response?.statusCode == 400) {
+        throw Exception(e.response?.data['message'] ?? 'Không thể check-in');
+      }
+      throw Exception('Lỗi kết nối: ${e.message}');
     } catch (e) {
       throw Exception('Failed to check-in passenger: $e');
     }

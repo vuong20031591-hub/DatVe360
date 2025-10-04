@@ -359,9 +359,10 @@ router.get('/search',
 );
 
 // @route   GET /api/v1/schedules/popular-routes
-// @desc    Get popular routes
+// @desc    Get popular routes (DEPRECATED - Use /trips/popular-routes instead)
 // @access  Public
-router.get('/popular-routes',
+// COMMENTED OUT - Duplicate of /trips/popular-routes
+/* router.get('/popular-routes',
   [
     query('limit').optional().isInt({ min: 1, max: 20 })
   ],
@@ -487,7 +488,7 @@ router.get('/popular-routes',
       data: popularRoutes
     });
   })
-);
+); */
 
 // @route   GET /api/v1/schedules/delayed
 // @desc    Get delayed schedules

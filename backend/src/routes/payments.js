@@ -10,6 +10,71 @@ const logger = require('../utils/logger');
 
 const vnpayService = new VNPayService();
 
+// @route   POST /api/v1/payments/process
+// @desc    Process generic payment (non-VNPay)
+// @access  Private
+router.post('/process',
+  AuthMiddleware.authenticate,
+  asyncHandler(async (req, res) => {
+    const { bookingId, paymentMethod, ...paymentData } = req.body;
+
+    // Validate booking exists
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy booking'
+      });
+    }
+
+    // Check ownership
+    if (req.user.role !== 'admin' && booking.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Không có quyền truy cập booking này'
+      });
+    }
+
+    // Check if booking is already paid
+    if (booking.paymentStatus === 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking đã được thanh toán'
+      });
+    }
+
+    // Create payment record
+    const payment = new Payment({
+      bookingId: booking._id,
+      userId: req.user._id,
+      amount: booking.totalPrice,
+      paymentMethod: paymentMethod || 'cash',
+      status: 'completed',
+      transactionId: `TXN_${Date.now()}`,
+      ...paymentData
+    });
+
+    await payment.save();
+
+    // Update booking status
+    booking.paymentStatus = 'paid';
+    booking.status = 'confirmed';
+    await booking.save();
+
+    res.json({
+      success: true,
+      data: {
+        transactionId: payment.transactionId,
+        paymentMethod: payment.paymentMethod,
+        amount: payment.amount,
+        status: payment.status,
+        processedAt: payment.createdAt
+      },
+      message: 'Thanh toán thành công'
+    });
+  })
+);
+
 // @route   GET /api/v1/payments/vnpay/test
 // @desc    Test VNPay payment URL generation
 // @access  Public

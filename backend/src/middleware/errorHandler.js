@@ -1,4 +1,4 @@
-const logger = require('../config/logger');
+const logger = require('../utils/logger');
 
 // 404 Not Found handler
 const notFound = (req, res, next) => {

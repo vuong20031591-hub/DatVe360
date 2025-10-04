@@ -103,43 +103,6 @@ router.get('/search', searchValidations.searchTrips, asyncHandler(async (req, re
   });
 }));
 
-// @desc    Get trip by ID
-// @route   GET /api/v1/trips/:id
-// @access  Public
-router.get('/:id', commonValidations.objectId('id'), asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  
-  // Check cache first
-  const cacheKey = `trip:${id}`;
-  const cachedTrip = await cache.get(cacheKey);
-  
-  if (cachedTrip) {
-    return res.json({
-      success: true,
-      data: { trip: cachedTrip },
-      cached: true
-    });
-  }
-
-  const trip = await Trip.findById(id);
-
-  if (!trip) {
-    throw new NotFoundError('Không tìm thấy chuyến đi');
-  }
-
-  if (!trip.isActive) {
-    throw new NotFoundError('Chuyến đi không khả dụng');
-  }
-
-  // Cache trip for 5 minutes
-  await cache.set(cacheKey, trip, 300);
-
-  res.json({
-    success: true,
-    data: { trip }
-  });
-}));
-
 // @desc    Get popular routes
 // @route   GET /api/v1/trips/popular-routes
 // @access  Public
@@ -165,6 +128,43 @@ router.get('/popular-routes', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: { routes }
+  });
+}));
+
+// @desc    Get trip by ID
+// @route   GET /api/v1/trips/:id
+// @access  Public
+router.get('/:id', commonValidations.objectId('id'), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Check cache first
+  const cacheKey = `trip:${id}`;
+  const cachedTrip = await cache.get(cacheKey);
+
+  if (cachedTrip) {
+    return res.json({
+      success: true,
+      data: { trip: cachedTrip },
+      cached: true
+    });
+  }
+
+  const trip = await Trip.findById(id);
+
+  if (!trip) {
+    throw new NotFoundError('Không tìm thấy chuyến đi');
+  }
+
+  if (!trip.isActive) {
+    throw new NotFoundError('Chuyến đi không khả dụng');
+  }
+
+  // Cache trip for 5 minutes
+  await cache.set(cacheKey, trip, 300);
+
+  res.json({
+    success: true,
+    data: { trip }
   });
 }));
 

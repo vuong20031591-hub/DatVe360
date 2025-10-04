@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/booking.dart';
 
@@ -80,14 +81,25 @@ class BookingRepository {
   // Cancel booking
   Future<bool> cancelBooking(String bookingId, String reason) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.post('/bookings/$bookingId/cancel',
-      //   data: {'reason': reason});
-      // return response.data['success'] ?? false;
+      final response = await _dioClient.post(
+        '/bookings/$bookingId/cancel',
+        data: {'reason': reason},
+      );
 
-      // For now, simulate cancellation
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return true;
+      } else {
+        throw Exception(response.data['message'] ?? 'Hủy đặt vé thất bại');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Không tìm thấy booking');
+      } else if (e.response?.statusCode == 400) {
+        throw Exception(
+          e.response?.data['message'] ?? 'Không thể hủy booking này',
+        );
+      }
+      throw Exception('Lỗi kết nối: ${e.message}');
     } catch (e) {
       throw Exception('Failed to cancel booking: $e');
     }
@@ -99,15 +111,28 @@ class BookingRepository {
     Map<String, dynamic> updates,
   ) async {
     try {
-      // TODO: Implement real API call
-      // final response = await _dioClient.put('/bookings/$bookingId', data: updates);
-      // return Booking.fromJson(response.data);
+      final response = await _dioClient.put(
+        '/bookings/$bookingId',
+        data: updates,
+      );
 
-      // For now, return updated mock booking
-      final booking = await getBookingById(bookingId);
-      if (booking == null) throw Exception('Booking not found');
-
-      return booking.copyWith(status: updates['status'] ?? booking.status);
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final bookingData = response.data['data']['booking'];
+        return Booking.fromJson(bookingData);
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Cập nhật booking thất bại',
+        );
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Không tìm thấy booking');
+      } else if (e.response?.statusCode == 400) {
+        throw Exception(
+          e.response?.data['message'] ?? 'Dữ liệu cập nhật không hợp lệ',
+        );
+      }
+      throw Exception('Lỗi kết nối: ${e.message}');
     } catch (e) {
       throw Exception('Failed to update booking: $e');
     }
@@ -129,27 +154,33 @@ class BookingRepository {
     }
   }
 
-  // Process payment
+  // Process payment (generic payment processing, not VNPay specific)
   Future<Map<String, dynamic>> processPayment(
     String bookingId,
     Map<String, dynamic> paymentData,
   ) async {
     try {
-      // TODO: Implement real payment processing
-      // final response = await _dioClient.post('/bookings/$bookingId/payment', data: paymentData);
-      // return response.data;
+      final response = await _dioClient.post(
+        '/payments/process',
+        data: {'bookingId': bookingId, ...paymentData},
+      );
 
-      // For now, simulate payment processing
-      await Future.delayed(const Duration(seconds: 2));
-
-      return {
-        'success': true,
-        'transaction_id': 'TXN_${DateTime.now().millisecondsSinceEpoch}',
-        'payment_method': paymentData['payment_method'],
-        'amount': paymentData['amount'],
-        'status': 'completed',
-        'processed_at': DateTime.now().toIso8601String(),
-      };
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return response.data['data'];
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Xử lý thanh toán thất bại',
+        );
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Không tìm thấy booking');
+      } else if (e.response?.statusCode == 400) {
+        throw Exception(
+          e.response?.data['message'] ?? 'Thông tin thanh toán không hợp lệ',
+        );
+      }
+      throw Exception('Lỗi kết nối: ${e.message}');
     } catch (e) {
       throw Exception('Failed to process payment: $e');
     }

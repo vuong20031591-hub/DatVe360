@@ -293,4 +293,6 @@ process.on('SIGINT', async () => {
   await redisClient.disconnect();
 });
 
+// Export both the client instance and cache object for backward compatibility
 module.exports = redisClient;
+module.exports.cache = redisClient;

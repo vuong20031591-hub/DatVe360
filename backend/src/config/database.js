@@ -9,9 +9,7 @@ const connectDB = async () => {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      family: 4,
-      // bufferMaxEntries: 0, // Deprecated option removed
-      // bufferCommands: false, // Deprecated option removed
+      family: 4
     };
 
     // Connect to MongoDB

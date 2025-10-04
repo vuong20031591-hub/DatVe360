@@ -21,15 +21,57 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
-import '../../test_vnpay_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../core/providers/locale_provider.dart';
+import '../../features/auth/domain/providers/auth_provider.dart';
+import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../../features/auth/data/models/auth_state.dart';
+import 'router_notifier.dart';
 
-/// App router configuration using GoRouter
-class AppRouter {
-  AppRouter._();
-
-  static final GoRouter _router = GoRouter(
+/// Router provider that creates GoRouter with proper redirect logic
+final routerProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
     initialLocation: '/',
+    refreshListenable: RouterRefreshNotifier(ref),
+    redirect: (context, state) {
+      // Get current auth and onboarding state
+      final authState = ref.read(authProvider);
+      final onboardingState = ref.read(onboardingProvider);
+      final currentPath = state.uri.path;
+
+      // Don't redirect if already on the target route
+      if (currentPath == '/onboarding' ||
+          currentPath == '/login' ||
+          currentPath == '/register' ||
+          currentPath == '/forgot-password') {
+        return null;
+      }
+
+      // First time user - show onboarding
+      if (!onboardingState.isCompleted) {
+        return '/onboarding';
+      }
+
+      // Onboarding completed but not authenticated - show login
+      if (onboardingState.isCompleted &&
+          authState.status == AuthStatus.unauthenticated) {
+        return '/login';
+      }
+
+      // User is authenticated - allow access to protected routes
+      if (authState.status == AuthStatus.authenticated) {
+        return null; // Allow access
+      }
+
+      // Loading state - don't redirect yet
+      if (authState.status == AuthStatus.loading ||
+          authState.status == AuthStatus.initial) {
+        return null;
+      }
+
+      // Default fallback
+      return '/login';
+    },
     routes: [
       // Bottom navigation shell
       ShellRoute(
@@ -177,17 +219,22 @@ class AppRouter {
         builder: (context, state) => const SettingsPage(),
       ),
 
-      // Test VNPay page
+      // Onboarding page
       GoRoute(
-        path: '/test-vnpay',
-        name: 'testVNPay',
-        builder: (context, state) => const TestVNPayPage(),
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingPage(),
       ),
     ],
     errorBuilder: (context, state) => AppErrorPage(error: state.error),
   );
+});
 
-  static GoRouter get router => _router;
+/// App router configuration using GoRouter
+class AppRouter {
+  AppRouter._();
+
+  static GoRouter router(WidgetRef ref) => ref.read(routerProvider);
 }
 
 /// Main shell with bottom navigation
