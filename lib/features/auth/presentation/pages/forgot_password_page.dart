@@ -303,21 +303,40 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     );
   }
 
-  void _handleSendResetEmail() {
+  void _handleSendResetEmail() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Implement actual password reset
-      setState(() {
-        _isEmailSent = true;
-      });
+      try {
+        // Call forgot password API
+        await ref.read(authProvider.notifier).forgotPassword(
+              _emailController.text.trim(),
+            );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Hướng dẫn đặt lại mật khẩu đã được gửi đến ${_emailController.text}',
-          ),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
+        setState(() {
+          _isEmailSent = true;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Hướng dẫn đặt lại mật khẩu đã được gửi đến ${_emailController.text}',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                e.toString().replaceAll('Exception: ', ''),
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
     }
   }
 }

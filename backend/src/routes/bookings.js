@@ -9,6 +9,7 @@ const { asyncHandler, ValidationError, NotFoundError, ConflictError } = require(
 const logger = require('../config/logger');
 const redis = require('../config/redis');
 const { v4: uuidv4 } = require('uuid');
+const socketEmitter = require('../utils/socketEmitter');
 
 const router = express.Router();
 
@@ -35,6 +36,93 @@ const checkValidation = (req, res, next) => {
   next();
 };
 
+/**
+ * @swagger
+ * /bookings:
+ *   post:
+ *     summary: Create a new booking
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - scheduleId
+ *               - passengers
+ *               - selectedClass
+ *               - contactInfo
+ *               - paymentMethod
+ *             properties:
+ *               scheduleId:
+ *                 type: string
+ *                 example: 507f1f77bcf86cd799439011
+ *               passengers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     type:
+ *                       type: string
+ *                       enum: [adult, child, infant]
+ *                     firstName:
+ *                       type: string
+ *                     lastName:
+ *                       type: string
+ *                     documentType:
+ *                       type: string
+ *                       enum: [passport, id_card, driver_license]
+ *                     documentNumber:
+ *                       type: string
+ *               selectedClass:
+ *                 type: string
+ *                 example: economy
+ *               selectedSeats:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               contactInfo:
+ *                 type: object
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   phone:
+ *                     type: string
+ *               paymentMethod:
+ *                 type: string
+ *                 enum: [vnpay, momo, stripe, bank_transfer]
+ *     responses:
+ *       201:
+ *         description: Booking created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     booking:
+ *                       $ref: '#/components/schemas/Booking'
+ *                     payment:
+ *                       type: object
+ *                     expiresIn:
+ *                       type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // @route   POST /api/v1/bookings
 // @desc    Create new booking
 // @access  Private
@@ -152,6 +240,16 @@ router.post('/',
         pnr: booking.pnr,
         scheduleId,
         totalPrice
+      });
+
+      // Emit socket event for new booking
+      socketEmitter.notifyNewBooking(booking);
+
+      // Emit seat update to schedule room
+      socketEmitter.emitSeatUpdate(scheduleId, {
+        selectedClass,
+        availableSeats: classInfo.availableSeats - passengers.length,
+        totalAvailable: schedule.seatConfiguration.availableSeats - passengers.length,
       });
 
       res.status(201).json({

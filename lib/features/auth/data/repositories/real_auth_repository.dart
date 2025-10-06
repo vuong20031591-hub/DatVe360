@@ -189,15 +189,34 @@ class RealAuthRepository implements AuthRepository {
   /// Forgot password
   @override
   Future<void> forgotPassword(String email) async {
-    // TODO: Implement forgot password API call
-    throw UnimplementedError('Forgot password not implemented yet');
+    try {
+      final response = await _apiService.forgotPassword(email: email);
+
+      if (response['success'] != true) {
+        throw Exception(
+          response['message'] ?? 'Gửi yêu cầu đặt lại mật khẩu thất bại',
+        );
+      }
+    } catch (e) {
+      throw Exception(_apiService.getErrorMessage(e));
+    }
   }
 
   /// Reset password
   @override
   Future<void> resetPassword(String token, String newPassword) async {
-    // TODO: Implement reset password API call
-    throw UnimplementedError('Reset password not implemented yet');
+    try {
+      final response = await _apiService.resetPassword(
+        token: token,
+        password: newPassword,
+      );
+
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Đặt lại mật khẩu thất bại');
+      }
+    } catch (e) {
+      throw Exception(_apiService.getErrorMessage(e));
+    }
   }
 
   /// Get user from local storage (for offline access)

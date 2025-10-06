@@ -129,6 +129,27 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    final response = await _dioClient.post(
+      '/auth/forgot-password',
+      data: {'email': email},
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    final response = await _dioClient.post(
+      '/auth/reset-password',
+      data: {'token': token, 'password': password},
+    );
+    return response.data;
+  }
+
   // Search endpoints
   Future<Map<String, dynamic>> searchSchedules({
     required String from,

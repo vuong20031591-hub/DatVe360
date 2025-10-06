@@ -20,6 +20,8 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 // Import configurations
 const connectDB = require('./config/database');
@@ -62,8 +64,9 @@ try {
   process.exit(1);
 }
 
-// Import socket handlers (commented out for now)
-// const socketHandler = require('./socket/socketHandler');
+// Import socket handlers
+const socketHandler = require('./socket/socketHandler');
+const socketEmitter = require('./utils/socketEmitter');
 
 const app = express();
 const server = createServer(app);
@@ -98,18 +101,31 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Logging middleware
-app.use(morgan('combined', { 
+app.use(morgan('combined', {
   stream: { write: message => logger.info(message.trim()) }
 }));
 
-// Socket.IO (commented out for now)
-// socketHandler(io);
+// Socket.IO
+socketHandler(io);
+socketEmitter.init(io);
 app.set('io', io);
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'DatVe360 API Documentation',
+}));
+
+// Swagger JSON endpoint
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '1.0.0'
   });
