@@ -6,6 +6,7 @@ const User = require('../models/User');
 const AuthMiddleware = require('../middleware/auth');
 const { asyncHandler, ValidationError, UnauthorizedError, NotFoundError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 // const redis = require('../config/redis'); // Commented out for now
 
 const router = express.Router();
@@ -47,10 +48,74 @@ const checkValidation = (req, res, next) => {
   next();
 };
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - displayName
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: Password123
+ *               displayName:
+ *                 type: string
+ *                 minLength: 2
+ *                 example: John Doe
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "0123456789"
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Đăng ký thành công
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     tokens:
+ *                       type: object
+ *                       properties:
+ *                         accessToken:
+ *                           type: string
+ *                         refreshToken:
+ *                           type: string
+ *                         expiresIn:
+ *                           type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ */
 // @route   POST /api/v1/auth/register
 // @desc    Register new user
 // @access  Public
-router.post('/register', 
+router.post('/register',
   registerValidation,
   checkValidation,
   AuthMiddleware.logAuthEvent('REGISTER'),
@@ -89,6 +154,11 @@ router.post('/register',
     const { accessToken, refreshToken, expiresIn } = AuthMiddleware.generateTokens(user._id);
     await user.addRefreshToken(refreshToken);
 
+    // Send welcome email (don't wait for it)
+    emailService.sendWelcomeEmail(user.email, user.displayName).catch(err => {
+      logger.error('Failed to send welcome email:', err);
+    });
+
     logger.info('User registered', {
       userId: user._id,
       email: user.email
@@ -115,6 +185,66 @@ router.post('/register',
   })
 );
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: Password123
+ *               rememberMe:
+ *                 type: boolean
+ *                 example: false
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Đăng nhập thành công
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     tokens:
+ *                       type: object
+ *                       properties:
+ *                         accessToken:
+ *                           type: string
+ *                         refreshToken:
+ *                           type: string
+ *                         expiresIn:
+ *                           type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 // @route   POST /api/v1/auth/login
 // @desc    Login user
 // @access  Public
@@ -387,6 +517,37 @@ router.post('/change-password',
   })
 );
 
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Password reset email sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // @route   POST /api/v1/auth/forgot-password
 // @desc    Forgot password
 // @access  Public
@@ -404,7 +565,22 @@ router.post('/forgot-password',
     // Generate reset token
     await user.generatePasswordReset();
 
-    // In production, send email here
+    // Send password reset email
+    try {
+      await emailService.sendPasswordResetEmail(
+        user.email,
+        user.resetPasswordToken,
+        user.displayName
+      );
+      logger.info('Password reset email sent', {
+        userId: user._id,
+        email: user.email
+      });
+    } catch (emailError) {
+      logger.error('Failed to send password reset email:', emailError);
+      // Continue anyway - token is still valid
+    }
+
     logger.info('Password reset requested', {
       userId: user._id,
       email: user.email,

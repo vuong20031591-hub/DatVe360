@@ -7,6 +7,7 @@ const Payment = require('../models/Payment');
 const AuthMiddleware = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
+const socketEmitter = require('../utils/socketEmitter');
 
 const vnpayService = new VNPayService();
 
@@ -60,6 +61,13 @@ router.post('/process',
     booking.paymentStatus = 'paid';
     booking.status = 'confirmed';
     await booking.save();
+
+    // Emit socket event for payment success
+    socketEmitter.notifyPaymentSuccess(payment, booking);
+    socketEmitter.emitBookingUpdate(booking.bookingId, {
+      status: 'confirmed',
+      paymentStatus: 'paid',
+    });
 
     res.json({
       success: true,
@@ -364,6 +372,13 @@ router.get('/vnpay/return', asyncHandler(async (req, res) => {
         payment.bookingId.status = 'confirmed';
         payment.bookingId.paymentStatus = 'paid';
         await payment.bookingId.save();
+
+        // Emit socket event for payment success
+        socketEmitter.notifyPaymentSuccess(payment, payment.bookingId);
+        socketEmitter.emitBookingUpdate(payment.bookingId.bookingId, {
+          status: 'confirmed',
+          paymentStatus: 'paid',
+        });
       }
 
       await payment.save();

@@ -34,15 +34,10 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
   @override
   OnboardingState build() {
     _storageService = StorageService.instance;
-    _checkOnboardingStatus();
-    return const OnboardingState();
-  }
-
-  /// Check if onboarding was previously completed
-  Future<void> _checkOnboardingStatus() async {
+    // Check onboarding status synchronously to avoid circular dependency
     final isCompleted =
         _storageService.readBool(_onboardingCompletedKey) ?? false;
-    state = state.copyWith(isCompleted: isCompleted);
+    return OnboardingState(isCompleted: isCompleted);
   }
 
   /// Update current page
