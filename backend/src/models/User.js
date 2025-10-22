@@ -179,8 +179,19 @@ UserSchema.methods.addRefreshToken = function(token, expiresAt) {
 };
 
 UserSchema.methods.removeRefreshToken = function(token) {
+  const initialLength = this.refreshTokens.length;
   this.refreshTokens = this.refreshTokens.filter(rt => rt.token !== token);
-  return this.save();
+
+  // Also remove expired tokens while we're at it
+  this.refreshTokens = this.refreshTokens.filter(rt => rt.expiresAt > new Date());
+
+  const removed = initialLength - this.refreshTokens.length;
+  if (removed > 0) {
+    return this.save();
+  }
+
+  // No changes, no need to save
+  return Promise.resolve(this);
 };
 
 UserSchema.methods.clearRefreshTokens = function() {

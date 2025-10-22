@@ -40,12 +40,22 @@ class StepReview extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // DEBUG: Print để kiểm tra
+                  Builder(
+                    builder: (context) {
+                      print(
+                        '🔍 StepReview - transportType: ${trip['transportType']}',
+                      );
+                      print('🔍 StepReview - trip keys: ${trip.keys.toList()}');
+                      return const SizedBox.shrink();
+                    },
+                  ),
                   Row(
                     children: [
-                      Icon(Icons.flight_takeoff, color: AppColors.flightColor),
+                      Icon(_getTripIcon(trip), color: _getTripColor(trip)),
                       const SizedBox(width: 8),
                       Text(
-                        'Thông tin chuyến bay',
+                        _getTripTitle(trip),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -78,7 +88,7 @@ class StepReview extends StatelessWidget {
 
                       Column(
                         children: [
-                          Icon(Icons.flight, color: theme.colorScheme.primary),
+                          Icon(_getTripIcon(trip), color: _getTripColor(trip)),
                           Text(
                             trip['duration'],
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -129,7 +139,7 @@ class StepReview extends StatelessWidget {
                         child: _buildInfoItem(
                           theme,
                           'Số hiệu',
-                          trip['flightNumber'],
+                          _getVehicleNumber(trip),
                         ),
                       ),
                     ],
@@ -378,12 +388,18 @@ class StepReview extends StatelessWidget {
     String? selectedClass,
     List<dynamic> selectedSeatData,
   ) {
-    final basePrice = _getBasePrice(trip, selectedClass);
+    final basePricePerSeat = _getBasePrice(trip, selectedClass);
+    final numberOfSeats = selectedSeatData.length;
+    final totalBasePrice = basePricePerSeat * numberOfSeats;
     final seatPrice = _getSeatPrice(selectedSeatData);
-    final taxPrice = (basePrice * 0.1).round(); // 10% tax
+    final taxPrice = (totalBasePrice * 0.1).round(); // 10% tax
 
     return [
-      _buildPriceRow(theme, 'Giá vé cơ bản', _formatPrice(basePrice)),
+      _buildPriceRow(
+        theme,
+        'Giá vé cơ bản (${numberOfSeats}x)',
+        _formatPrice(totalBasePrice),
+      ),
       if (seatPrice > 0)
         _buildPriceRow(theme, 'Phí chọn ghế', _formatPrice(seatPrice)),
       _buildPriceRow(theme, 'Thuế và phí', _formatPrice(taxPrice)),
@@ -421,13 +437,79 @@ class StepReview extends StatelessWidget {
     String? selectedClass,
     List<dynamic> selectedSeatData,
   ) {
-    final basePrice = _getBasePrice(trip, selectedClass);
+    final basePricePerSeat = _getBasePrice(trip, selectedClass);
+    final numberOfSeats = selectedSeatData.length;
+    final totalBasePrice = basePricePerSeat * numberOfSeats;
     final seatPrice = _getSeatPrice(selectedSeatData);
-    final taxPrice = (basePrice * 0.1).round();
-    return basePrice + seatPrice + taxPrice;
+    final taxPrice = (totalBasePrice * 0.1).round();
+    return totalBasePrice + seatPrice + taxPrice;
   }
 
   String _formatPrice(int price) {
     return '${(price / 1000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}K VND';
+  }
+
+  String _getVehicleNumber(Map<String, dynamic> trip) {
+    final transportType = trip['transportType'] ?? 'flight';
+    final carrier = trip['carrier'] ?? '';
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        final flightNumber = trip['flightNumber'];
+        return flightNumber != null ? '$carrier $flightNumber' : carrier;
+      case 'train':
+        final trainNumber = trip['trainNumber'];
+        return trainNumber != null ? '$carrier $trainNumber' : carrier;
+      case 'bus':
+        final busNumber = trip['busNumber'];
+        return busNumber != null ? '$carrier $busNumber' : carrier;
+      default:
+        return carrier;
+    }
+  }
+
+  IconData _getTripIcon(Map<String, dynamic> trip) {
+    final transportType = trip['transportType'] ?? 'flight';
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        return Icons.flight_takeoff;
+      case 'train':
+        return Icons.train;
+      case 'bus':
+        return Icons.directions_bus;
+      default:
+        return Icons.flight_takeoff;
+    }
+  }
+
+  Color _getTripColor(Map<String, dynamic> trip) {
+    final transportType = trip['transportType'] ?? 'flight';
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        return AppColors.flightColor;
+      case 'train':
+        return AppColors.trainColor;
+      case 'bus':
+        return AppColors.busColor;
+      default:
+        return AppColors.flightColor;
+    }
+  }
+
+  String _getTripTitle(Map<String, dynamic> trip) {
+    final transportType = trip['transportType'] ?? 'flight';
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        return 'Thông tin chuyến bay';
+      case 'train':
+        return 'Thông tin chuyến tàu';
+      case 'bus':
+        return 'Thông tin chuyến xe';
+      default:
+        return 'Thông tin chuyến đi';
+    }
   }
 }

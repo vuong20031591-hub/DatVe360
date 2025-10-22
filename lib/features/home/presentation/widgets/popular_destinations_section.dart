@@ -4,17 +4,19 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../shared/widgets/offline_banner.dart';
-
+import '../../../search/presentation/providers/popular_destinations_provider.dart';
 import '../../../search/presentation/widgets/destination_card.dart';
 
 class PopularDestinationsSection extends ConsumerStatefulWidget {
   const PopularDestinationsSection({super.key});
 
   @override
-  ConsumerState<PopularDestinationsSection> createState() => _PopularDestinationsSectionState();
+  ConsumerState<PopularDestinationsSection> createState() =>
+      _PopularDestinationsSectionState();
 }
 
-class _PopularDestinationsSectionState extends ConsumerState<PopularDestinationsSection> {
+class _PopularDestinationsSectionState
+    extends ConsumerState<PopularDestinationsSection> {
   TransportMode _selectedMode = TransportMode.flight;
 
   @override
@@ -44,7 +46,7 @@ class _PopularDestinationsSectionState extends ConsumerState<PopularDestinations
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Transport mode tabs
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -63,14 +65,14 @@ class _PopularDestinationsSectionState extends ConsumerState<PopularDestinations
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSelected 
-                          ? theme.colorScheme.primary 
-                          : theme.colorScheme.surface,
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isSelected 
-                            ? theme.colorScheme.primary 
-                            : theme.colorScheme.outline.withOpacity(0.3),
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
@@ -79,18 +81,20 @@ class _PopularDestinationsSectionState extends ConsumerState<PopularDestinations
                           Icon(
                             _getTransportIcon(mode),
                             size: 16,
-                            color: isSelected 
-                              ? Colors.white 
-                              : theme.colorScheme.onSurface,
+                            color: isSelected
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _getTransportLabel(mode, localizations),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: isSelected 
-                                ? Colors.white 
-                                : theme.colorScheme.onSurface,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              color: isSelected
+                                  ? Colors.white
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                           ),
                         ],
@@ -102,32 +106,107 @@ class _PopularDestinationsSectionState extends ConsumerState<PopularDestinations
             }).toList(),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Destinations list
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: SizedBox(
-            key: ValueKey(_selectedMode),
-            height: 120,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _getPopularDestinations().length,
-              separatorBuilder: (context, index) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final destination = _getPopularDestinations()[index];
-                return DestinationCard(
-                  destination: destination,
-                  mode: _selectedMode,
-                  onTap: () => _selectDestination(destination),
-                );
-              },
+          child: _buildDestinationsList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDestinationsList() {
+    final popularState = ref.watch(popularDestinationsProvider);
+    final theme = Theme.of(context);
+
+    print('📍 Building destinations list - Loading: ${popularState.isLoading}, Error: ${popularState.error}, Count: ${popularState.destinations.length}');
+
+    // Loading state
+    if (popularState.isLoading) {
+      return SizedBox(
+        key: const ValueKey('loading'),
+        height: 120,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    // Error state
+    if (popularState.error != null) {
+      return SizedBox(
+        key: const ValueKey('error'),
+        height: 120,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 32,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Không thể tải điểm đến',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(popularDestinationsProvider.notifier).loadPopularDestinations();
+                },
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Filter destinations by transport mode
+    final destinations = _getPopularDestinations();
+
+    // Empty state
+    if (destinations.isEmpty) {
+      return SizedBox(
+        key: const ValueKey('empty'),
+        height: 120,
+        child: Center(
+          child: Text(
+            'Chưa có điểm đến phổ biến',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ),
-      ],
+      );
+    }
+
+    // Success state - show destinations
+    return SizedBox(
+      key: ValueKey(_selectedMode),
+      height: 120,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: destinations.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final destination = destinations[index];
+          return DestinationCard(
+            destination: destination,
+            mode: _selectedMode,
+            onTap: () => _selectDestination(destination),
+          );
+        },
+      ),
     );
   }
 
@@ -142,11 +221,14 @@ class _PopularDestinationsSectionState extends ConsumerState<PopularDestinations
     }
   }
 
-  String _getTransportLabel(TransportMode mode, AppLocalizations localizations) {
+  String _getTransportLabel(
+    TransportMode mode,
+    AppLocalizations localizations,
+  ) {
     return mode.displayName;
   }
 
-  void _selectDestination(Map<String, String> destination) {
+  void _selectDestination(Map<String, dynamic> destination) {
     // TODO: Navigate to search with pre-filled destination
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -156,77 +238,17 @@ class _PopularDestinationsSectionState extends ConsumerState<PopularDestinations
     );
   }
 
-  List<Map<String, String>> _getPopularDestinations() {
-    switch (_selectedMode) {
-      case TransportMode.flight:
-        return [
-          {
-            'name': 'Hồ Chí Minh',
-            'price': '1.200.000đ',
-            'image': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Đà Nẵng',
-            'price': '800.000đ',
-            'image': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Nha Trang',
-            'price': '900.000đ',
-            'image': 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Phú Quốc',
-            'price': '1.500.000đ',
-            'image': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-          },
-        ];
-      case TransportMode.train:
-        return [
-          {
-            'name': 'Hồ Chí Minh',
-            'price': '600.000đ',
-            'image': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Huế',
-            'price': '400.000đ',
-            'image': 'https://images.unsplash.com/photo-1555400082-8c5cd5b3c3d1?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Đà Nẵng',
-            'price': '500.000đ',
-            'image': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Nha Trang',
-            'price': '550.000đ',
-            'image': 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?w=400&h=300&fit=crop',
-          },
-        ];
-      case TransportMode.bus:
-        return [
-          {
-            'name': 'Hồ Chí Minh',
-            'price': '300.000đ',
-            'image': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Hải Phòng',
-            'price': '200.000đ',
-            'image': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Vinh',
-            'price': '250.000đ',
-            'image': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Huế',
-            'price': '280.000đ',
-            'image': 'https://images.unsplash.com/photo-1555400082-8c5cd5b3c3d1?w=400&h=300&fit=crop',
-          },
-        ];
-    }
+  List<Map<String, dynamic>> _getPopularDestinations() {
+    // Watch provider to rebuild when data changes
+    ref.watch(popularDestinationsProvider);
+    
+    // Filter by selected transport mode
+    final transportType = _selectedMode == TransportMode.flight
+        ? 'flight'
+        : _selectedMode == TransportMode.train
+            ? 'train'
+            : 'bus';
+    
+    return ref.read(popularDestinationsProvider.notifier).filterByType(transportType);
   }
 }

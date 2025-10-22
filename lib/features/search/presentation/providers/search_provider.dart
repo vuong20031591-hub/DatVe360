@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod/riverpod.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/search_history_service.dart';
+import 'search_history_provider.dart';
 import '../../data/repositories/real_search_repository.dart';
 import '../../data/models/search_query.dart';
 import '../../data/models/schedule.dart';
@@ -70,8 +70,8 @@ class SearchNotifier extends Notifier<SearchState> {
     try {
       final searchResponse = await _repository.searchSchedules(query);
 
-      // Save to search history
-      await SearchHistoryService.instance.addSearchToHistory(query);
+      // Save to search history via provider
+      await ref.read(searchHistoryListProvider.notifier).addSearch(query);
 
       state = state.copyWith(
         isLoading: false,
@@ -283,8 +283,8 @@ final searchProvider = NotifierProvider<SearchNotifier, SearchState>(
   SearchNotifier.new,
 );
 
-/// Popular destinations provider
-final popularDestinationsProvider = FutureProvider<List<Map<String, dynamic>>>((
+/// Popular destinations provider (deprecated - use popular_destinations_provider.dart)
+final legacyPopularDestinationsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) {
   final repository = ref.read(searchRepositoryProvider);

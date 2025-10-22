@@ -107,6 +107,16 @@ const authValidations = {
       .withMessage('Refresh token là bắt buộc'),
     handleValidationErrors
   ],
+
+  logout: [
+    body('refreshToken')
+      .optional()
+      .isString()
+      .withMessage('Refresh token phải là chuỗi')
+      .isLength({ min: 10 })
+      .withMessage('Refresh token không hợp lệ'),
+    handleValidationErrors
+  ],
   
   forgotPassword: [
     body('identifier')

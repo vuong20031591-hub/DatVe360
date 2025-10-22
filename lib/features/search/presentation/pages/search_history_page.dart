@@ -106,17 +106,21 @@ class _SearchHistoryPageState extends ConsumerState<SearchHistoryPage> {
 
   Widget _buildFilterTabs(BuildContext context, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _buildFilterChip('Tất cả', true, theme),
-          const SizedBox(width: 8),
-          _buildFilterChip('Máy bay', false, theme),
-          const SizedBox(width: 8),
-          _buildFilterChip('Tàu hỏa', false, theme),
-          const SizedBox(width: 8),
-          _buildFilterChip('Xe khách', false, theme),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _buildFilterChip('Tất cả', true, theme),
+            const SizedBox(width: 8),
+            _buildFilterChip('Máy bay', false, theme),
+            const SizedBox(width: 8),
+            _buildFilterChip('Tàu hỏa', false, theme),
+            const SizedBox(width: 8),
+            _buildFilterChip('Xe khách', false, theme),
+          ],
+        ),
       ),
     );
   }

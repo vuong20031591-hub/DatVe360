@@ -11,7 +11,20 @@ const SeatConfigurationSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  layout: String, // "3-3", "2-4-2", etc.
+  layout: String, // "3-3", "2-4-2", "compartment", etc.
+  // For trains: coach and compartment configuration
+  coaches: {
+    type: Number,
+    min: 1
+  },
+  compartmentsPerCoach: {
+    type: Number,
+    min: 1
+  },
+  seatsPerCompartment: {
+    type: Number,
+    min: 1
+  },
   classes: {
     type: Map,
     of: {
@@ -52,10 +65,41 @@ const ScheduleSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  operatorName: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true
+  },
+  operatorCode: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true,
+    index: true
+  },
   vehicleNumber: {
     type: String,
     required: true,
     trim: true,
+    index: true
+  },
+  transportType: {
+    type: String,
+    enum: ['flight', 'bus', 'train', 'ferry'],
+    required: true,
+    index: true
+  },
+  from: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Destination',
+    required: true,
+    index: true
+  },
+  to: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Destination',
+    required: true,
     index: true
   },
   departureTime: {
@@ -67,6 +111,11 @@ const ScheduleSchema = new mongoose.Schema({
     type: Date,
     required: true,
     index: true
+  },
+  duration: {
+    type: Number,
+    required: true,
+    min: 0
   },
   status: {
     type: String,
@@ -87,6 +136,14 @@ const ScheduleSchema = new mongoose.Schema({
   checkInEnd: Date,
   boardingStart: Date,
   boardingEnd: Date,
+  bookingDeadline: {
+    type: Date
+  },
+  cancellationPolicy: {
+    refundable: { type: Boolean, default: true },
+    cancellationFee: { type: Number, min: 0, default: 0 },
+    timeLimit: { type: Number, min: 0, default: 24 }
+  },
   isActive: {
     type: Boolean,
     default: true,
@@ -118,18 +175,22 @@ const ScheduleSchema = new mongoose.Schema({
 // Indexes
 ScheduleSchema.index({ routeId: 1, departureTime: 1 });
 ScheduleSchema.index({ operatorId: 1, departureTime: 1 });
+ScheduleSchema.index({ operatorCode: 1, departureTime: 1 });
 ScheduleSchema.index({ status: 1, departureTime: 1 });
 ScheduleSchema.index({ vehicleNumber: 1, departureTime: 1 });
 ScheduleSchema.index({ departureTime: 1, arrivalTime: 1 });
 ScheduleSchema.index({ isActive: 1, status: 1, departureTime: 1 });
+ScheduleSchema.index({ transportType: 1, from: 1, to: 1, departureTime: 1 });
+ScheduleSchema.index({ from: 1, to: 1, departureTime: 1 });
+ScheduleSchema.index({ bookingDeadline: 1 });
 
 // Virtuals
-ScheduleSchema.virtual('duration').get(function() {
+ScheduleSchema.virtual('durationMs').get(function() {
   return this.arrivalTime.getTime() - this.departureTime.getTime();
 });
 
 ScheduleSchema.virtual('durationFormatted').get(function() {
-  const minutes = Math.floor(this.duration / (1000 * 60));
+  const minutes = this.duration || Math.floor(this.durationMs / (1000 * 60));
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
   return `${hours}h ${remainingMinutes}m`;
@@ -161,12 +222,13 @@ ScheduleSchema.virtual('canBook').get(function() {
 });
 
 ScheduleSchema.virtual('occupancyRate').get(function() {
-  if (this.seatConfiguration.totalSeats === 0) return 0;
+  if (!this.seatConfiguration || this.seatConfiguration.totalSeats === 0) return 0;
   const occupied = this.seatConfiguration.totalSeats - this.seatConfiguration.availableSeats;
   return Math.round((occupied / this.seatConfiguration.totalSeats) * 100);
 });
 
 ScheduleSchema.virtual('basePrice').get(function() {
+  if (!this.seatConfiguration || !this.seatConfiguration.classes) return 0;
   let minPrice = Infinity;
   this.seatConfiguration.classes.forEach((classInfo) => {
     if (classInfo.price < minPrice) {

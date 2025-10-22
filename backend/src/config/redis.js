@@ -99,7 +99,8 @@ class RedisClient {
     if (!this.isConnected) return false;
 
     try {
-      const serialized = JSON.stringify(value);
+      // For simple values (string, number), don't JSON.stringify
+      const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
       if (ttl) {
         await this.client.setex(key, ttl, serialized);
       } else {
@@ -133,6 +134,18 @@ class RedisClient {
     } catch (error) {
       logger.error('Redis EXISTS error:', error);
       return false;
+    }
+  }
+
+  async keys(pattern) {
+    if (!this.isConnected) return [];
+
+    try {
+      const keys = await this.client.keys(pattern);
+      return keys || [];
+    } catch (error) {
+      logger.error('Redis KEYS error:', error);
+      return [];
     }
   }
 

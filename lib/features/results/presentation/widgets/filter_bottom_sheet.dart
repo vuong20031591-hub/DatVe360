@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/widgets/app_button.dart';
 
 class FilterBottomSheet extends StatefulWidget {
@@ -6,10 +7,14 @@ class FilterBottomSheet extends StatefulWidget {
     super.key,
     required this.currentFilters,
     required this.onApply,
+    required this.transportMode,
+    required this.availableOperators,
   });
 
   final Map<String, dynamic> currentFilters;
   final Function(Map<String, dynamic>) onApply;
+  final TransportMode transportMode;
+  final List<String> availableOperators;
 
   @override
   State<FilterBottomSheet> createState() => _FilterBottomSheetState();
@@ -254,11 +259,25 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildDurationFilter(ThemeData theme) {
+    // Label động theo transport mode
+    String label;
+    switch (widget.transportMode) {
+      case TransportMode.flight:
+        label = 'Thời gian bay tối đa';
+        break;
+      case TransportMode.train:
+        label = 'Thời gian di chuyển tối đa';
+        break;
+      case TransportMode.bus:
+        label = 'Thời gian di chuyển tối đa';
+        break;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Thời gian bay tối đa',
+          label,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -305,24 +324,36 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildOperatorFilter(ThemeData theme) {
-    final operators = [
-      'Vietnam Airlines',
-      'VietJet Air',
-      'Bamboo Airways',
-      'Pacific Airlines',
-    ];
+    // Nếu không có operators, không hiển thị filter này
+    if (widget.availableOperators.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Label động theo transport mode
+    String label;
+    switch (widget.transportMode) {
+      case TransportMode.flight:
+        label = 'Hãng hàng không';
+        break;
+      case TransportMode.train:
+        label = 'Nhà điều hành tàu';
+        break;
+      case TransportMode.bus:
+        label = 'Nhà xe';
+        break;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hãng hàng không',
+          label,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 16),
-        ...operators.map((operator) {
+        ...widget.availableOperators.map((operator) {
           return CheckboxListTile(
             title: Text(operator),
             value: _selectedOperators.contains(operator),
@@ -344,6 +375,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildDirectFlightsFilter(ThemeData theme) {
+    // Chỉ hiển thị cho máy bay
+    if (widget.transportMode != TransportMode.flight) {
+      return const SizedBox.shrink();
+    }
+
     return SwitchListTile(
       title: Text(
         'Chỉ chuyến bay thẳng',

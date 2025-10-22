@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const Schedule = require('../models/Schedule');
+const Booking = require('../models/Booking');
 
 // @desc    Get seat map for schedule
 // @route   GET /api/v1/seats/schedule/:scheduleId
@@ -8,16 +10,46 @@ router.get('/schedule/:scheduleId', async (req, res) => {
   try {
     const { scheduleId } = req.params;
 
-    // Generate mock seat map for testing
-    const seatMap = generateMockSeatMap();
+    // Get schedule from database
+    const schedule = await Schedule.findById(scheduleId)
+      .populate('routeId')
+      .populate('operatorId');
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy lịch trình'
+      });
+    }
+
+    // Get booked seats for this schedule
+    const bookings = await Booking.find({
+      scheduleId,
+      status: { $in: ['confirmed', 'pending'] }
+    }).select('seats');
+
+    const bookedSeatIds = new Set();
+    bookings.forEach(booking => {
+      booking.seats.forEach(seat => {
+        bookedSeatIds.add(seat.seatId);
+      });
+    });
+
+    // Generate seat map based on transport type
+    const seatMap = generateSeatMapByType(
+      schedule.transportType,
+      schedule.seatConfiguration,
+      bookedSeatIds
+    );
 
     res.json({
       success: true,
       data: {
         scheduleId,
-        layout: '3-3',
-        totalSeats: 120,
-        availableSeats: 95,
+        transportType: schedule.transportType,
+        layout: schedule.seatConfiguration.layout,
+        totalSeats: schedule.seatConfiguration.totalSeats,
+        availableSeats: schedule.seatConfiguration.availableSeats,
         seatMap
       }
     });
@@ -30,85 +62,231 @@ router.get('/schedule/:scheduleId', async (req, res) => {
   }
 });
 
-// Helper function to generate mock seat map
-function generateMockSeatMap() {
-  const layout = '3-3';
-  const totalSeats = 120;
-  const vehicleType = 'aircraft';
-  
-  // Parse layout (e.g., "3-3" means 3 seats, aisle, 3 seats)
-  const seatConfig = layout.split('-').map(n => parseInt(n));
-  const seatsPerRow = seatConfig.reduce((sum, n) => sum + n, 0);
-  const totalRows = Math.ceil(totalSeats / seatsPerRow);
-  
-  const seatMap = [];
-  const columns = generateColumnLabels(seatConfig);
-  
-  // Generate some booked seats for realism (5-15% occupancy)
-  const occupancyRate = 0.05 + Math.random() * 0.10;
-  const bookedSeatsCount = Math.floor(totalSeats * occupancyRate);
-  const bookedSeats = new Set();
-  
-  // Randomly select booked seats
-  while (bookedSeats.size < bookedSeatsCount) {
-    const row = Math.floor(Math.random() * totalRows) + 1;
-    const colIndex = Math.floor(Math.random() * columns.length);
-    const seatId = `${row}${columns[colIndex]}`;
-    bookedSeats.add(seatId);
+// Helper function to generate seat map based on transport type
+function generateSeatMapByType(transportType, seatConfig, bookedSeatIds) {
+  switch (transportType.toLowerCase()) {
+    case 'flight':
+      return generateAirplaneSeatMap(seatConfig, bookedSeatIds);
+    case 'train':
+      return generateTrainSeatMap(seatConfig, bookedSeatIds);
+    case 'bus':
+      return generateBusSeatMap(seatConfig, bookedSeatIds);
+    default:
+      return generateAirplaneSeatMap(seatConfig, bookedSeatIds);
   }
-  
+}
+
+// Generate airplane seat map (3-3 or 2-4-2 layout)
+function generateAirplaneSeatMap(seatConfig, bookedSeatIds) {
+  const layout = seatConfig.layout || '3-3';
+  const totalSeats = seatConfig.totalSeats;
+
+  const layoutConfig = layout.split('-').map(n => parseInt(n));
+  const seatsPerRow = layoutConfig.reduce((sum, n) => sum + n, 0);
+  const totalRows = Math.ceil(totalSeats / seatsPerRow);
+
+  const seatMap = [];
+  const columns = generateColumnLabels(layoutConfig);
+
   for (let row = 1; row <= totalRows; row++) {
     const rowSeats = [];
     let colIndex = 0;
-    
-    for (let sectionIndex = 0; sectionIndex < seatConfig.length; sectionIndex++) {
-      const sectionSize = seatConfig[sectionIndex];
-      
+
+    for (let sectionIndex = 0; sectionIndex < layoutConfig.length; sectionIndex++) {
+      const sectionSize = layoutConfig[sectionIndex];
+
       for (let seatInSection = 0; seatInSection < sectionSize; seatInSection++) {
         const col = columns[colIndex];
         const seatId = `${row}${col}`;
-        
-        // Determine seat type based on position
+
+        // Determine seat type
         let seatType = 'standard';
-        if (vehicleType === 'aircraft') {
-          if (row <= 3) seatType = 'premium';
-          else if (col === 'A' || col === 'F') seatType = 'window';
-          else if (col === 'C' || col === 'D') seatType = 'aisle';
-        }
-        
-        // Determine seat status
-        let status = 'available';
-        if (bookedSeats.has(seatId)) {
-          status = 'booked';
-        }
-        
+        if (row <= 3) seatType = 'vip'; // First 3 rows are VIP
+
+        // Determine status
+        const status = bookedSeatIds.has(seatId) ? 'booked' : 'available';
+
         rowSeats.push({
           id: seatId,
           row,
           col,
           type: seatType,
           status,
-          priceAddon: seatType === 'premium' ? 500000 :
-                     seatType === 'window' || seatType === 'aisle' ? 50000 : 0,
-          metadata: {
-            section: sectionIndex,
-            position: seatInSection
-          }
+          priceAddon: seatType === 'vip' ? 500000 : 0
         });
-        
+
         colIndex++;
       }
-      
+
       // Add aisle space (except after last section)
-      if (sectionIndex < seatConfig.length - 1) {
-        rowSeats.push(null); // Aisle space
+      if (sectionIndex < layoutConfig.length - 1) {
+        rowSeats.push(null);
       }
     }
-    
+
     seatMap.push(rowSeats);
   }
-  
+
   return seatMap;
+}
+
+// Generate train seat map (compartments with berths organized by coaches)
+function generateTrainSeatMap(seatConfig, bookedSeatIds) {
+  const totalSeats = seatConfig.totalSeats;
+  const seatsPerCompartment = 4; // 4-berth compartments (2 left + 2 right)
+  const compartmentsPerCoach = 10; // Standard: 10 compartments per coach
+
+  const totalCompartments = Math.ceil(totalSeats / seatsPerCompartment);
+  const totalCoaches = Math.ceil(totalCompartments / compartmentsPerCoach);
+
+  const coaches = [];
+  let globalSeatNumber = 1;
+
+  for (let coachNum = 1; coachNum <= totalCoaches; coachNum++) {
+    const compartments = [];
+    const maxCompartmentsInThisCoach = Math.min(
+      compartmentsPerCoach,
+      totalCompartments - (coachNum - 1) * compartmentsPerCoach
+    );
+
+    for (let compNum = 1; compNum <= maxCompartmentsInThisCoach; compNum++) {
+      const leftBerths = [];
+      const rightBerths = [];
+
+      // Left side: 2 berths (lower, upper)
+      for (let i = 0; i < 2; i++) {
+        if (globalSeatNumber > totalSeats) break;
+
+        const seatId = `C${coachNum}${compNum < 10 ? '0' + compNum : compNum}-L${i + 1}`;
+        leftBerths.push({
+          id: seatId,
+          coachNumber: coachNum,
+          compartmentNumber: compNum,
+          position: `L${i + 1}`,
+          type: 'standard',
+          status: bookedSeatIds.has(seatId) ? 'booked' : 'available',
+          priceAddon: 0
+        });
+        globalSeatNumber++;
+      }
+
+      // Right side: 2 berths (lower, upper)
+      for (let i = 0; i < 2; i++) {
+        if (globalSeatNumber > totalSeats) break;
+
+        const seatId = `C${coachNum}${compNum < 10 ? '0' + compNum : compNum}-R${i + 1}`;
+        rightBerths.push({
+          id: seatId,
+          coachNumber: coachNum,
+          compartmentNumber: compNum,
+          position: `R${i + 1}`,
+          type: 'standard',
+          status: bookedSeatIds.has(seatId) ? 'booked' : 'available',
+          priceAddon: 0
+        });
+        globalSeatNumber++;
+      }
+
+      compartments.push({
+        compartmentNumber: compNum,
+        leftBerths,
+        rightBerths
+      });
+
+      if (globalSeatNumber > totalSeats) break;
+    }
+
+    coaches.push({
+      coachNumber: coachNum,
+      compartments
+    });
+
+    if (globalSeatNumber > totalSeats) break;
+  }
+
+  return coaches;
+}
+
+// Generate bus seat map (2-1 layout with 2 levels)
+function generateBusSeatMap(seatConfig, bookedSeatIds) {
+  const totalSeats = seatConfig.totalSeats;
+  const seatsPerLevel = Math.ceil(totalSeats / 2);
+
+  const lowerLevel = [];
+  const upperLevel = [];
+
+  let seatNumber = 1;
+
+  // Generate lower level
+  for (let row = 1; row <= Math.ceil(seatsPerLevel / 3); row++) {
+    const rowSeats = [];
+
+    // Left side: 2 seats
+    for (let i = 0; i < 2; i++) {
+      const seatId = `L${row}${String.fromCharCode(65 + i)}`; // L1A, L1B
+      rowSeats.push({
+        id: seatId,
+        type: 'standard',
+        status: bookedSeatIds.has(seatId) ? 'booked' : 'available',
+        priceAddon: 0
+      });
+      seatNumber++;
+      if (seatNumber > totalSeats) break;
+    }
+
+    // Right side: 1 seat
+    if (seatNumber <= totalSeats) {
+      const seatId = `L${row}C`;
+      rowSeats.push({
+        id: seatId,
+        type: 'standard',
+        status: bookedSeatIds.has(seatId) ? 'booked' : 'available',
+        priceAddon: 0
+      });
+      seatNumber++;
+    }
+
+    lowerLevel.push(rowSeats);
+    if (seatNumber > totalSeats) break;
+  }
+
+  // Generate upper level
+  for (let row = 1; row <= Math.ceil(seatsPerLevel / 3); row++) {
+    const rowSeats = [];
+
+    // Left side: 2 seats
+    for (let i = 0; i < 2; i++) {
+      const seatId = `U${row}${String.fromCharCode(65 + i)}`; // U1A, U1B
+      rowSeats.push({
+        id: seatId,
+        type: 'standard',
+        status: bookedSeatIds.has(seatId) ? 'booked' : 'available',
+        priceAddon: 0
+      });
+      seatNumber++;
+      if (seatNumber > totalSeats) break;
+    }
+
+    // Right side: 1 seat
+    if (seatNumber <= totalSeats) {
+      const seatId = `U${row}C`;
+      rowSeats.push({
+        id: seatId,
+        type: 'standard',
+        status: bookedSeatIds.has(seatId) ? 'booked' : 'available',
+        priceAddon: 0
+      });
+      seatNumber++;
+    }
+
+    upperLevel.push(rowSeats);
+    if (seatNumber > totalSeats) break;
+  }
+
+  return [{
+    lowerLevel,
+    upperLevel
+  }];
 }
 
 // Helper function to generate column labels

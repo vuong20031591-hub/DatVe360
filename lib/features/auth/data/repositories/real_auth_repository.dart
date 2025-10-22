@@ -99,16 +99,14 @@ class RealAuthRepository implements AuthRepository {
   }
 
   /// Logout user
+  /// Always succeeds - clears local data even if API call fails
   @override
   Future<void> logout() async {
-    try {
-      await _apiService.logout();
-    } catch (e) {
-      // Ignore logout errors
-    } finally {
-      _currentUser = null;
-      await _storage.delete('current_user');
-    }
+    // Clear local state first
+    _currentUser = null;
+
+    // API service handles clearing storage and calling backend
+    await _apiService.logout();
   }
 
   /// Refresh authentication token

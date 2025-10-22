@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/providers/locale_provider.dart';
-import '../../../../core/services/search_history_service.dart';
-
+import '../providers/search_history_provider.dart';
+import '../providers/search_provider.dart';
 
 class RecentSearchesSection extends ConsumerWidget {
   const RecentSearchesSection({super.key});
@@ -27,33 +28,19 @@ class RecentSearchesSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildRecentSearchesList(context, theme, localizations),
+        _buildRecentSearchesList(context, ref, theme, localizations),
       ],
     );
   }
 
-  Widget _buildRecentSearchesList(BuildContext context, ThemeData theme, AppLocalizations localizations) {
-    // Mock data for recent searches
-    final recentSearches = [
-      {
-        'from': 'Hà Nội',
-        'to': 'Hồ Chí Minh',
-        'mode': TransportMode.flight,
-        'date': '15/12/2024',
-      },
-      {
-        'from': 'Hà Nội',
-        'to': 'Đà Nẵng',
-        'mode': TransportMode.train,
-        'date': '10/12/2024',
-      },
-      {
-        'from': 'Hồ Chí Minh',
-        'to': 'Nha Trang',
-        'mode': TransportMode.bus,
-        'date': '05/12/2024',
-      },
-    ];
+  Widget _buildRecentSearchesList(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    AppLocalizations localizations,
+  ) {
+    // Watch provider for reactive updates
+    final recentSearches = ref.watch(searchHistoryListProvider);
 
     if (recentSearches.isEmpty) {
       return Padding(
@@ -88,14 +75,24 @@ class RecentSearchesSection extends ConsumerWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final search = recentSearches[index];
-        return _buildRecentSearchItem(context, theme, search);
+        return _buildRecentSearchItem(context, ref, theme, search);
       },
     );
   }
 
-  Widget _buildRecentSearchItem(BuildContext context, ThemeData theme, Map<String, dynamic> search) {
-    final mode = search['mode'] as TransportMode;
-    
+  Widget _buildRecentSearchItem(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    Map<String, dynamic> search,
+  ) {
+    // Parse mode string to TransportMode enum
+    final modeString = search['mode'] as String;
+    final mode = TransportMode.values.firstWhere(
+      (m) => m.value == modeString,
+      orElse: () => TransportMode.flight,
+    );
+
     return Card(
       child: ListTile(
         leading: Container(
@@ -151,18 +148,52 @@ class RecentSearchesSection extends ConsumerWidget {
             size: 18,
             color: theme.colorScheme.onSurface.withOpacity(0.4),
           ),
-          onPressed: () {
-            // TODO: Remove from recent searches
+          onPressed: () async {
+            // Remove from history via provider
+            await ref.read(searchHistoryListProvider.notifier).removeSearch(
+              search['originalItem'] as Map<String, dynamic>
+            );
+            
+            // Show confirmation
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Đã xóa khỏi lịch sử'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
           },
         ),
-        onTap: () {
-          // TODO: Pre-fill search form with this search
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Tìm kiếm: ${search['from']} → ${search['to']}'),
-              duration: const Duration(seconds: 2),
-            ),
+        onTap: () async {
+          // Convert history item to SearchQuery
+          final searchQuery = ref.read(searchHistoryListProvider.notifier)
+              .itemToQuery(search);
+
+          // Update search form (for when user comes back)
+          final formNotifier = ref.read(searchFormProvider.notifier);
+          formNotifier.updateFrom(searchQuery.from);
+          formNotifier.updateTo(searchQuery.to);
+          formNotifier.updateDepartDate(searchQuery.departDate);
+          
+          if (searchQuery.roundTrip && searchQuery.returnDate != null) {
+            formNotifier.updateRoundTrip(true);
+            formNotifier.updateReturnDate(searchQuery.returnDate);
+          }
+          
+          formNotifier.updatePassengers(
+            adults: searchQuery.passengers.adult,
+            children: searchQuery.passengers.child,
+            infants: searchQuery.passengers.infant,
           );
+
+          // Trigger search
+          await ref.read(searchProvider.notifier).searchSchedules(searchQuery);
+
+          // Navigate to results page
+          if (context.mounted) {
+            context.go('/results');
+          }
         },
       ),
     );

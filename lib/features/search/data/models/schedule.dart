@@ -98,7 +98,10 @@ class Schedule {
       duration: Duration(minutes: durationMinutes),
       price: defaultPrice.toDouble(),
       currency: defaultCurrency,
-      transportType: route['transportType'] as String? ?? 'flight',
+      transportType:
+          json['transportType'] as String? ??
+          route['transportType'] as String? ??
+          'flight',
       vehicleType: vehicle['type'] as String? ?? 'aircraft',
       totalSeats:
           json['availableSeats'] as int? ??

@@ -400,43 +400,15 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  // Mock data methods
+  // TODO: Implement real API calls for favorites
   List<Map<String, dynamic>> _getFavoriteTrips() {
-    return [
-      {
-        'from': 'Hà Nội',
-        'to': 'Hồ Chí Minh',
-        'mode': 'flight',
-        'airline': 'Vietnam Airlines',
-        'price': '2.500.000đ',
-        'duration': '2h 15m',
-      },
-      {
-        'from': 'Đà Nẵng',
-        'to': 'Nha Trang',
-        'mode': 'train',
-        'operator': 'Đường sắt Việt Nam',
-        'price': '450.000đ',
-        'duration': '10h 30m',
-      },
-    ];
+    // Return empty list - should be fetched from API
+    return [];
   }
 
   List<Map<String, dynamic>> _getFavoriteDestinations() {
-    return [
-      {
-        'name': 'Phú Quốc',
-        'price': '1.500.000đ',
-        'image':
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-      },
-      {
-        'name': 'Đà Nẵng',
-        'price': '800.000đ',
-        'image':
-            'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
-      },
-    ];
+    // Return empty list - should be fetched from API
+    return [];
   }
 
   List<Map<String, dynamic>> _getFavoriteRoutes() {

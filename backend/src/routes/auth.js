@@ -7,7 +7,8 @@ const AuthMiddleware = require('../middleware/auth');
 const { asyncHandler, ValidationError, UnauthorizedError, NotFoundError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
-// const redis = require('../config/redis'); // Commented out for now
+const redis = require('../config/redis');
+const { authValidations } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -350,29 +351,67 @@ router.post('/refresh',
 // @access  Private
 router.post('/logout',
   AuthMiddleware.authenticate,
+  authValidations.logout,
   AuthMiddleware.logAuthEvent('LOGOUT'),
   asyncHandler(async (req, res) => {
     const { refreshToken } = req.body;
 
-    if (refreshToken) {
-      await req.user.removeRefreshToken(refreshToken);
+    try {
+      // Remove refresh token if provided
+      if (refreshToken) {
+        // Verify token belongs to this user before removing
+        const tokenExists = req.user.refreshTokens.some(rt => rt.token === refreshToken);
+        if (tokenExists) {
+          await req.user.removeRefreshToken(refreshToken);
+        } else {
+          logger.warn('Attempted to remove non-existent refresh token', {
+            userId: req.user._id,
+            email: req.user.email
+          });
+        }
+      }
+
+      // Add access token to blacklist (prevent reuse until expiry)
+      if (redis.isConnected) {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.decode(req.token);
+        const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+
+        if (expiresIn > 0) {
+          await redis.set(`blacklist:${req.token}`, '1', expiresIn);
+          logger.info('Access token blacklisted', {
+            userId: req.user._id,
+            expiresIn
+          });
+        }
+      } else {
+        logger.warn('Redis not connected, access token not blacklisted', {
+          userId: req.user._id
+        });
+      }
+
+      logger.info('User logged out', {
+        userId: req.user._id,
+        email: req.user.email,
+        refreshTokenRemoved: !!refreshToken
+      });
+
+      res.json({
+        success: true,
+        message: 'Đăng xuất thành công'
+      });
+    } catch (error) {
+      logger.error('Logout error', {
+        userId: req.user._id,
+        error: error.message
+      });
+
+      // Still return success to client (logout should always succeed from user perspective)
+      res.json({
+        success: true,
+        message: 'Đăng xuất thành công'
+      });
     }
-
-    // Add token to blacklist (if using Redis) - Commented out for now
-    // if (redis.isConnected) {
-    //   const tokenExpiry = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 7 days
-    //   await redis.set(`blacklist_${req.token}`, '1', tokenExpiry);
-    // }
-
-    logger.info('User logged out', {
-      userId: req.user._id,
-      email: req.user.email
-    });
-
-    res.json({
-      success: true,
-      message: 'Đăng xuất thành công'
-    });
   })
 );
 
@@ -383,17 +422,42 @@ router.post('/logout-all',
   AuthMiddleware.authenticate,
   AuthMiddleware.logAuthEvent('LOGOUT_ALL'),
   asyncHandler(async (req, res) => {
-    await req.user.clearRefreshTokens();
+    try {
+      // Clear all refresh tokens
+      await req.user.clearRefreshTokens();
 
-    logger.info('User logged out from all devices', {
-      userId: req.user._id,
-      email: req.user.email
-    });
+      // Blacklist current access token
+      if (redis.isConnected) {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.decode(req.token);
+        const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
 
-    res.json({
-      success: true,
-      message: 'Đã đăng xuất khỏi tất cả thiết bị'
-    });
+        if (expiresIn > 0) {
+          await redis.set(`blacklist:${req.token}`, '1', expiresIn);
+        }
+      }
+
+      logger.info('User logged out from all devices', {
+        userId: req.user._id,
+        email: req.user.email
+      });
+
+      res.json({
+        success: true,
+        message: 'Đã đăng xuất khỏi tất cả thiết bị'
+      });
+    } catch (error) {
+      logger.error('Logout-all error', {
+        userId: req.user._id,
+        error: error.message
+      });
+
+      // Still return success to client
+      res.json({
+        success: true,
+        message: 'Đã đăng xuất khỏi tất cả thiết bị'
+      });
+    }
   })
 );
 
@@ -430,17 +494,20 @@ router.get('/me',
 router.put('/profile',
   AuthMiddleware.authenticate,
   [
-    body('displayName').optional().trim().isLength({ min: 2 }),
-    body('phoneNumber').optional().isMobilePhone('vi-VN'),
-    body('profile.firstName').optional().trim().isLength({ min: 1 }),
-    body('profile.lastName').optional().trim().isLength({ min: 1 }),
-    body('profile.dateOfBirth').optional().isISO8601(),
-    body('profile.gender').optional().isIn(['male', 'female', 'other'])
+    body('displayName').optional({ nullable: true }).trim().isLength({ min: 2 }),
+    body('phoneNumber').optional({ nullable: true }).custom((value) => {
+      if (value === null || value === '') return true;
+      return /^[0-9+\-\s()]+$/.test(value);
+    }),
+    body('profile.firstName').optional({ nullable: true }).trim().isLength({ min: 1 }),
+    body('profile.lastName').optional({ nullable: true }).trim().isLength({ min: 1 }),
+    body('profile.dateOfBirth').optional({ nullable: true }).isISO8601(),
+    body('profile.gender').optional({ nullable: true }).isIn(['male', 'female', 'other'])
   ],
   checkValidation,
   asyncHandler(async (req, res) => {
     const allowedUpdates = [
-      'displayName', 'phoneNumber', 'photoURL', 'preferences', 'profile'
+      'displayName', 'phoneNumber', 'photoURL', 'avatar', 'preferences', 'profile'
     ];
 
     const updates = {};

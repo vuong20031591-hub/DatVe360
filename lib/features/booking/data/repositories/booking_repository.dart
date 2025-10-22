@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/booking.dart';
+import '../models/booking_exception.dart';
 
 class BookingRepository {
   // ignore: unused_field
@@ -21,27 +22,105 @@ class BookingRepository {
           } catch (parseError) {
             print('Booking.fromJson error: $parseError');
             print('Booking JSON: $bookingJson');
-            throw Exception('Failed to parse booking data: $parseError');
+            throw BookingException(
+              'Failed to parse booking data: $parseError',
+              type: BookingErrorType.parseError,
+            );
           }
         } else {
           print('Response data: ${response.data}');
-          throw Exception('Booking data is null in response');
+          throw BookingException(
+            'Booking data is null in response',
+            type: BookingErrorType.invalidResponse,
+          );
         }
       } else {
         print(
           'API Error - Success: ${response.data['success']}, Message: ${response.data['message']}',
         );
-        throw Exception(response.data['message'] ?? 'Tạo booking thất bại');
+        throw BookingException(
+          response.data['message'] ?? 'Tạo booking thất bại',
+          type: BookingErrorType.apiError,
+        );
       }
+    } on DioException catch (e) {
+      // Handle DioException specifically
+      if (e.response != null) {
+        final statusCode = e.response!.statusCode;
+        final message = e.response!.data['message'] ?? e.message;
+
+        // Race condition: 409 Conflict
+        if (statusCode == 409) {
+          throw BookingException(
+            message ?? 'Ghế đã được đặt bởi người khác, vui lòng thử lại',
+            type: BookingErrorType.conflict,
+            canRetry: true,
+          );
+        }
+
+        // Validation error: 400 Bad Request
+        if (statusCode == 400) {
+          throw BookingException(
+            message ?? 'Dữ liệu không hợp lệ',
+            type: BookingErrorType.validation,
+          );
+        }
+
+        // Not found: 404
+        if (statusCode == 404) {
+          throw BookingException(
+            message ?? 'Không tìm thấy lịch trình',
+            type: BookingErrorType.notFound,
+          );
+        }
+
+        // Server error: 500+
+        if (statusCode != null && statusCode >= 500) {
+          throw BookingException(
+            message ?? 'Lỗi máy chủ, vui lòng thử lại sau',
+            type: BookingErrorType.serverError,
+            canRetry: true,
+          );
+        }
+      }
+
+      // Network error
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw BookingException(
+          'Kết nối timeout, vui lòng thử lại',
+          type: BookingErrorType.timeout,
+          canRetry: true,
+        );
+      }
+
+      if (e.type == DioExceptionType.connectionError) {
+        throw BookingException(
+          'Không thể kết nối đến máy chủ',
+          type: BookingErrorType.network,
+          canRetry: true,
+        );
+      }
+
+      // Unknown error
+      throw BookingException(
+        'Lỗi không xác định: ${e.message}',
+        type: BookingErrorType.unknown,
+      );
     } catch (e) {
       // Log the full error for debugging
       print('BookingRepository.createBooking error: $e');
-      if (e.toString().contains('Failed to create booking:') ||
-          e.toString().contains('Failed to parse booking data:') ||
-          e.toString().contains('Booking data is null')) {
+
+      // Re-throw BookingException
+      if (e is BookingException) {
         rethrow;
       }
-      throw Exception('Failed to create booking: $e');
+
+      throw BookingException(
+        'Failed to create booking: $e',
+        type: BookingErrorType.unknown,
+      );
     }
   }
 
@@ -92,16 +171,47 @@ class BookingRepository {
         throw Exception(response.data['message'] ?? 'Hủy đặt vé thất bại');
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        throw Exception('Không tìm thấy booking');
-      } else if (e.response?.statusCode == 400) {
-        throw Exception(
-          e.response?.data['message'] ?? 'Không thể hủy booking này',
-        );
+      if (e.response != null) {
+        final statusCode = e.response!.statusCode;
+        final message = e.response!.data['message'] ?? e.message;
+
+        // Race condition: 409 Conflict - booking đã bị hủy
+        if (statusCode == 409) {
+          throw BookingException(
+            message ?? 'Đặt vé đã bị hủy hoặc không thể hủy',
+            type: BookingErrorType.conflict,
+            canRetry: false,
+          );
+        }
+
+        // Not found: 404
+        if (statusCode == 404) {
+          throw BookingException(
+            message ?? 'Không tìm thấy booking',
+            type: BookingErrorType.notFound,
+          );
+        }
+
+        // Bad request: 400
+        if (statusCode == 400) {
+          throw BookingException(
+            message ?? 'Không thể hủy booking này',
+            type: BookingErrorType.validation,
+          );
+        }
       }
-      throw Exception('Lỗi kết nối: ${e.message}');
+
+      throw BookingException(
+        'Lỗi kết nối: ${e.message}',
+        type: BookingErrorType.network,
+        canRetry: true,
+      );
     } catch (e) {
-      throw Exception('Failed to cancel booking: $e');
+      if (e is BookingException) rethrow;
+      throw BookingException(
+        'Failed to cancel booking: $e',
+        type: BookingErrorType.unknown,
+      );
     }
   }
 
@@ -146,7 +256,23 @@ class BookingRepository {
       if (response.data['success'] == true && response.data['data'] != null) {
         final List<dynamic> bookingsData =
             response.data['data']['bookings'] ?? [];
-        return bookingsData.map((json) => Booking.fromJson(json)).toList();
+
+        print('🔍 DEBUG: Parsing ${bookingsData.length} bookings');
+        final bookings = <Booking>[];
+        for (var i = 0; i < bookingsData.length; i++) {
+          try {
+            print('🔍 DEBUG: Parsing booking $i');
+            final booking = Booking.fromJson(bookingsData[i]);
+            bookings.add(booking);
+            print('✅ DEBUG: Booking $i parsed successfully');
+          } catch (e, stack) {
+            print('❌ DEBUG: Error parsing booking $i: $e');
+            print('📋 DEBUG: Booking data: ${bookingsData[i]}');
+            print('📋 DEBUG: Stack trace: $stack');
+            rethrow;
+          }
+        }
+        return bookings;
       }
       return [];
     } catch (e) {

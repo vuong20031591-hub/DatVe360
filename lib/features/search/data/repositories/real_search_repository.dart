@@ -104,19 +104,27 @@ class RealSearchRepository {
   /// Get popular destinations
   Future<List<Map<String, dynamic>>> getPopularDestinations() async {
     try {
+      print('🔥 getPopularDestinations() called');
+      
       // Try to get from cache first
       final cachedDestinations = _cacheService.getCachedDestinations();
       if (cachedDestinations != null) {
+        print('✅ Returned cached destinations: ${cachedDestinations.length}');
         return cachedDestinations;
       }
 
-      // If offline, return empty list
+      // If offline, throw error
       if (!_connectivityService.isOnline) {
-        return [];
+        print('❌ Offline, no cache available');
+        throw Exception(
+          'Không có kết nối mạng và không tìm thấy dữ liệu đã lưu',
+        );
       }
 
+      print('🌐 Calling API: /destinations/popular');
       // Make API call to get destinations
       final response = await _dioClient.get('/destinations/popular');
+      print('📡 API Response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
@@ -131,11 +139,10 @@ class RealSearchRepository {
 
         return destinations;
       } else {
-        return [];
+        throw Exception('Không thể tải danh sách điểm đến');
       }
     } catch (e) {
-      // Return empty list on error, don't throw
-      return [];
+      rethrow;
     }
   }
 

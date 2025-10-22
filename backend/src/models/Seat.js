@@ -12,15 +12,28 @@ const seatSchema = new mongoose.Schema({
     required: [true, 'Số ghế là bắt buộc'],
     trim: true
   },
+  // For train: coach (toa xe) and compartment (khoang)
+  coachNumber: {
+    type: Number,
+    min: 1,
+    sparse: true,
+    index: true
+  },
+  compartmentNumber: {
+    type: Number,
+    min: 1,
+    sparse: true
+  },
+  // For airplane/bus: row and column
   row: {
     type: Number,
-    required: [true, 'Hàng ghế là bắt buộc'],
-    min: 1
+    min: 1,
+    sparse: true
   },
   column: {
     type: String,
-    required: [true, 'Cột ghế là bắt buộc'],
-    match: /^[A-Z]$/
+    match: /^[A-Z]$/,
+    sparse: true
   },
   classType: {
     type: String,
@@ -115,6 +128,7 @@ const seatSchema = new mongoose.Schema({
 seatSchema.index({ tripId: 1, seatNumber: 1 }, { unique: true });
 seatSchema.index({ tripId: 1, status: 1 });
 seatSchema.index({ tripId: 1, classType: 1, status: 1 });
+seatSchema.index({ tripId: 1, coachNumber: 1, compartmentNumber: 1 }, { sparse: true });
 seatSchema.index({ bookedBy: 1 }, { sparse: true });
 seatSchema.index({ heldBy: 1, heldUntil: 1 }, { sparse: true });
 

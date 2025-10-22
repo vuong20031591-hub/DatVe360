@@ -278,6 +278,8 @@ router.get('/search',
       delayMinutes: schedule.delayMinutes,
       availableSeats: schedule.seatConfiguration.availableSeats,
       classes: schedule.seatConfiguration.classes,
+      // Add transportType to top-level for easy access
+      transportType: schedule.route.transportType,
       route: {
         id: schedule.route._id,
         from: schedule.fromDest,

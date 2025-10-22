@@ -11,6 +11,7 @@ import '../../features/trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/booking/presentation/pages/booking_page.dart';
 import '../../features/booking/presentation/pages/manage_booking_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/tickets/presentation/pages/ticket_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -105,6 +106,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const ProfilePage(),
+          ),
+
+          // Edit Profile page
+          GoRoute(
+            path: '/edit-profile',
+            name: 'edit-profile',
+            builder: (context, state) => const EditProfilePage(),
           ),
         ],
       ),

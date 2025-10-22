@@ -80,18 +80,18 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Logout current user
+  /// Always succeeds - user is logged out locally even if backend call fails
   Future<void> logout() async {
-    try {
-      state = AuthState.loading();
+    state = AuthState.loading();
 
-      // Stop auto-refresh
-      _tokenRefreshService.stopAutoRefresh();
+    // Stop auto-refresh
+    _tokenRefreshService.stopAutoRefresh();
 
-      await _authRepository.logout();
-      state = AuthState.unauthenticated();
-    } catch (e) {
-      state = AuthState.error(e.toString());
-    }
+    // Logout always succeeds (clears local data)
+    await _authRepository.logout();
+
+    // Always set to unauthenticated, never error
+    state = AuthState.unauthenticated();
   }
 
   /// Forgot password
@@ -116,9 +116,16 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> updateProfile(User user) async {
     try {
       await _authRepository.updateProfile(user);
-      state = AuthState.authenticated(user);
+      // Get updated user from repository (backend may return additional fields)
+      final updatedUser = await _authRepository.getCurrentUser();
+      if (updatedUser != null) {
+        state = AuthState.authenticated(updatedUser);
+      } else {
+        state = AuthState.authenticated(user);
+      }
     } catch (e) {
       state = AuthState.error(e.toString());
+      rethrow;
     }
   }
 }

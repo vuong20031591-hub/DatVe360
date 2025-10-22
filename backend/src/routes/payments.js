@@ -120,47 +120,7 @@ router.post('/vnpay/create',
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-      // For testing purposes, create a mock booking
-      if (bookingId.startsWith('test_booking_')) {
-        const mockBooking = {
-          _id: new mongoose.Types.ObjectId(),
-          userId: req.user._id,
-          totalAmount: 100000, // 100k VND for testing
-          status: 'pending',
-          scheduleId: {
-            from: { name: 'Test From' },
-            to: { name: 'Test To' },
-            departureTime: new Date()
-          }
-        };
-
-        // Create VNPay payment URL for test booking
-        const paymentUrl = vnpayService.createPaymentUrl({
-          orderId: bookingId,
-          amount: mockBooking.totalAmount,
-          orderInfo: `Thanh toan ve test`,
-          returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/return`,
-          ipAddr: req.ip || '127.0.0.1',
-          bankCode: bankCode
-        });
-
-        return res.status(200).json({
-          success: true,
-          message: 'Tạo URL thanh toán VNPay thành công (Test Mode)',
-          data: {
-            paymentUrl,
-            paymentId: `PAY_${Date.now()}`,
-            transactionId: bookingId,
-            amount: mockBooking.totalAmount,
-            expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes
-          }
-        });
-      }
-
-      return res.status(400).json({
-        success: false,
-        message: 'BookingId không hợp lệ'
-      });
+      throw new ValidationError('ID booking không hợp lệ');
     }
 
     // Tìm booking
@@ -358,30 +318,86 @@ router.get('/vnpay/return', asyncHandler(async (req, res) => {
       return res.redirect(`${process.env.BASE_URL}/payment/failed?error=amount_mismatch`);
     }
 
-    // Xử lý kết quả thanh toán
+    // Xử lý kết quả thanh toán với idempotency check
     if (verifyResult.responseCode === '00') {
-      // Thanh toán thành công
-      payment.status = 'completed';
-      payment.vnpayTransactionNo = verifyResult.transactionNo;
-      payment.bankCode = verifyResult.bankCode;
-      payment.payDate = verifyResult.payDate;
-      payment.completedAt = new Date();
-      
-      // Cập nhật booking status
-      if (payment.bookingId) {
-        payment.bookingId.status = 'confirmed';
-        payment.bookingId.paymentStatus = 'paid';
-        await payment.bookingId.save();
-
-        // Emit socket event for payment success
-        socketEmitter.notifyPaymentSuccess(payment, payment.bookingId);
-        socketEmitter.emitBookingUpdate(payment.bookingId.bookingId, {
-          status: 'confirmed',
-          paymentStatus: 'paid',
+      // Check if already processed (idempotency)
+      if (payment.status === 'completed') {
+        logger.info('Payment already processed (idempotent)', {
+          paymentId: payment._id,
+          transactionNo: verifyResult.transactionNo
         });
+        return res.redirect(`${process.env.BASE_URL}/payment/success?bookingId=${payment.bookingId._id}`);
       }
 
-      await payment.save();
+      // Use transaction to prevent double processing
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      try {
+        // Atomic update: Only complete if status is pending
+        const updatedPayment = await Payment.findOneAndUpdate(
+          {
+            _id: payment._id,
+            status: 'pending'
+          },
+          {
+            $set: {
+              status: 'completed',
+              vnpayTransactionNo: verifyResult.transactionNo,
+              bankCode: verifyResult.bankCode,
+              payDate: verifyResult.payDate,
+              completedAt: new Date()
+            }
+          },
+          { new: true, session }
+        ).populate('bookingId');
+
+        if (!updatedPayment) {
+          // Payment was already processed by another request
+          throw new Error('Payment already processed');
+        }
+
+        // Atomic update booking status
+        if (updatedPayment.bookingId) {
+          const updatedBooking = await Booking.findOneAndUpdate(
+            {
+              _id: updatedPayment.bookingId._id,
+              status: { $in: ['pending', 'confirmed'] }
+            },
+            {
+              $set: {
+                status: 'confirmed',
+                paymentStatus: 'paid'
+              }
+            },
+            { new: true, session }
+          );
+
+          if (!updatedBooking) {
+            throw new Error('Booking already processed or cancelled');
+          }
+
+          // Emit socket events
+          socketEmitter.notifyPaymentSuccess(updatedPayment, updatedBooking);
+          socketEmitter.emitBookingUpdate(updatedBooking._id, {
+            status: 'confirmed',
+            paymentStatus: 'paid',
+          });
+        }
+
+        await session.commitTransaction();
+        payment = updatedPayment;
+
+      } catch (error) {
+        await session.abortTransaction();
+        logger.error('Payment processing failed', {
+          paymentId: payment._id,
+          error: error.message
+        });
+        throw error;
+      } finally {
+        session.endSession();
+      }
 
       logger.info('VNPay payment completed successfully', {
         paymentId: payment._id,
@@ -610,23 +626,69 @@ router.post('/vnpay/ipn', asyncHandler(async (req, res) => {
       ));
     }
 
-    // Xử lý kết quả thanh toán
+    // Xử lý kết quả thanh toán với transaction
     if (verifyResult.responseCode === '00' && verifyResult.transactionStatus === '00') {
-      // Thanh toán thành công
-      payment.status = 'completed';
-      payment.vnpayTransactionNo = verifyResult.transactionNo;
-      payment.bankCode = verifyResult.bankCode;
-      payment.payDate = verifyResult.payDate;
-      payment.completedAt = new Date();
-      
-      // Cập nhật booking status
-      if (payment.bookingId) {
-        payment.bookingId.status = 'confirmed';
-        payment.bookingId.paymentStatus = 'paid';
-        await payment.bookingId.save();
-      }
+      const session = await mongoose.startSession();
+      session.startTransaction();
 
-      await payment.save();
+      try {
+        // Atomic update payment
+        const updatedPayment = await Payment.findOneAndUpdate(
+          {
+            _id: payment._id,
+            status: 'pending'
+          },
+          {
+            $set: {
+              status: 'completed',
+              vnpayTransactionNo: verifyResult.transactionNo,
+              bankCode: verifyResult.bankCode,
+              payDate: verifyResult.payDate,
+              completedAt: new Date()
+            }
+          },
+          { new: true, session }
+        ).populate('bookingId');
+
+        if (!updatedPayment) {
+          // Already processed
+          await session.abortTransaction();
+          return res.json(vnpayService.createIpnResponse(
+            VNPayService.RESPONSE_CODES.ORDER_ALREADY_CONFIRMED,
+            'Order already confirmed'
+          ));
+        }
+
+        // Atomic update booking
+        if (updatedPayment.bookingId) {
+          await Booking.findOneAndUpdate(
+            {
+              _id: updatedPayment.bookingId._id,
+              status: { $in: ['pending', 'confirmed'] }
+            },
+            {
+              $set: {
+                status: 'confirmed',
+                paymentStatus: 'paid'
+              }
+            },
+            { session }
+          );
+        }
+
+        await session.commitTransaction();
+        payment = updatedPayment;
+
+      } catch (error) {
+        await session.abortTransaction();
+        logger.error('VNPay IPN processing failed', {
+          paymentId: payment._id,
+          error: error.message
+        });
+        throw error;
+      } finally {
+        session.endSession();
+      }
 
       logger.info('VNPay IPN payment completed successfully', {
         paymentId: payment._id,

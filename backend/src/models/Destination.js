@@ -37,15 +37,20 @@ const DestinationSchema = new mongoose.Schema({
     index: true
   },
   coordinates: {
-    latitude: {
-      type: Number,
-      min: -90,
-      max: 90
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
     },
-    longitude: {
-      type: Number,
-      min: -180,
-      max: 180
+    coordinates: {
+      type: [Number],
+      required: true,
+      validate: {
+        validator: function(v) {
+          return v.length === 2 && v[0] >= -180 && v[0] <= 180 && v[1] >= -90 && v[1] <= 90;
+        },
+        message: 'Coordinates must be [longitude, latitude] with valid ranges'
+      }
     }
   },
   timezone: {
@@ -88,7 +93,7 @@ const DestinationSchema = new mongoose.Schema({
 DestinationSchema.index({ name: 'text', nameEn: 'text', city: 'text' });
 DestinationSchema.index({ type: 1, active: 1 });
 DestinationSchema.index({ city: 1, type: 1 });
-DestinationSchema.index({ coordinates: '2dsphere' });
+DestinationSchema.index({ 'coordinates': '2dsphere' });
 DestinationSchema.index({ popular: -1, name: 1 });
 
 // Virtuals
@@ -100,45 +105,52 @@ DestinationSchema.virtual('displayName').get(function() {
   return this.nameEn ? `${this.name} - ${this.nameEn}` : this.name;
 });
 
-DestinationSchema.virtual('location').get(function() {
-  if (this.coordinates && this.coordinates.latitude && this.coordinates.longitude) {
-    return {
-      type: 'Point',
-      coordinates: [this.coordinates.longitude, this.coordinates.latitude]
-    };
-  }
-  return null;
+DestinationSchema.virtual('latitude').get(function() {
+  return this.coordinates && this.coordinates.coordinates ? this.coordinates.coordinates[1] : null;
+});
+
+DestinationSchema.virtual('longitude').get(function() {
+  return this.coordinates && this.coordinates.coordinates ? this.coordinates.coordinates[0] : null;
 });
 
 // Methods
 DestinationSchema.methods.getDistance = function(otherDestination) {
-  if (!this.coordinates || !otherDestination.coordinates) {
+  if (!this.coordinates || !this.coordinates.coordinates ||
+      !otherDestination.coordinates || !otherDestination.coordinates.coordinates) {
     return null;
   }
 
   const R = 6371; // Earth's radius in kilometers
-  const dLat = (otherDestination.coordinates.latitude - this.coordinates.latitude) * Math.PI / 180;
-  const dLon = (otherDestination.coordinates.longitude - this.coordinates.longitude) * Math.PI / 180;
-  
-  const a = 
+  const lat1 = this.coordinates.coordinates[1];
+  const lon1 = this.coordinates.coordinates[0];
+  const lat2 = otherDestination.coordinates.coordinates[1];
+  const lon2 = otherDestination.coordinates.coordinates[0];
+
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
     Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(this.coordinates.latitude * Math.PI / 180) * 
-    Math.cos(otherDestination.coordinates.latitude * Math.PI / 180) * 
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon/2) * Math.sin(dLon/2);
-  
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   const distance = R * c;
-  
+
   return Math.round(distance * 100) / 100; // Round to 2 decimal places
 };
 
 DestinationSchema.methods.isNearby = function(latitude, longitude, radiusKm = 50) {
-  if (!this.coordinates) return false;
-  
+  if (!this.coordinates || !this.coordinates.coordinates) return false;
+
   const distance = this.getDistance({
-    coordinates: { latitude, longitude }
+    coordinates: {
+      type: 'Point',
+      coordinates: [longitude, latitude]
+    }
   });
-  
+
   return distance && distance <= radiusKm;
 };
 

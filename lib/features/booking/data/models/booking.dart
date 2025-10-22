@@ -67,6 +67,7 @@ class Booking {
   final String? cancelReason;
   final DateTime? expiresAt;
   final Map<String, dynamic> metadata;
+  final BookingSchedule? schedule; // Populated schedule data
 
   const Booking({
     required this.id,
@@ -89,6 +90,7 @@ class Booking {
     this.cancelReason,
     this.expiresAt,
     this.metadata = const {},
+    this.schedule,
   });
 
   /// Helper method to extract ID from object or string
@@ -124,7 +126,7 @@ class Booking {
           ? ContactInfo.fromJson(json['contactInfo'])
           : const ContactInfo(email: '', phone: ''),
       paymentMethod: json['paymentMethod'] ?? '',
-      paymentId: json['paymentId'],
+      paymentId: _extractId(json['paymentId']),
       createdAt: DateTime.parse(
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
@@ -142,6 +144,9 @@ class Booking {
           ? DateTime.parse(json['expiresAt'])
           : null,
       metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
+      schedule: json['scheduleId'] is Map<String, dynamic>
+          ? BookingSchedule.fromJson(json['scheduleId'])
+          : null,
     );
   }
 
@@ -191,6 +196,7 @@ class Booking {
     String? cancelReason,
     DateTime? expiresAt,
     Map<String, dynamic>? metadata,
+    BookingSchedule? schedule,
   }) {
     return Booking(
       id: id ?? this.id,
@@ -213,6 +219,7 @@ class Booking {
       cancelReason: cancelReason ?? this.cancelReason,
       expiresAt: expiresAt ?? this.expiresAt,
       metadata: metadata ?? this.metadata,
+      schedule: schedule ?? this.schedule,
     );
   }
 }
@@ -327,5 +334,52 @@ class BookingRequest {
       'paymentMethod': paymentMethod,
       'metadata': metadata,
     };
+  }
+}
+
+/// Simplified schedule data for booking list
+class BookingSchedule {
+  final String departureTime;
+  final String arrivalTime;
+  final BookingRoute route;
+  final String? vehicleNumber;
+  final String? transportType;
+
+  const BookingSchedule({
+    required this.departureTime,
+    required this.arrivalTime,
+    required this.route,
+    this.vehicleNumber,
+    this.transportType,
+  });
+
+  factory BookingSchedule.fromJson(Map<String, dynamic> json) {
+    // Parse route from 'from'/'to' objects (API returns populated destination objects)
+    final fromCity = json['from'] is Map
+        ? (json['from']['city'] ?? json['from']['name'] ?? '')
+        : '';
+    final toCity = json['to'] is Map
+        ? (json['to']['city'] ?? json['to']['name'] ?? '')
+        : '';
+
+    return BookingSchedule(
+      departureTime: json['departureTime'] ?? '',
+      arrivalTime: json['arrivalTime'] ?? '',
+      route: BookingRoute(from: fromCity, to: toCity),
+      vehicleNumber: json['vehicleNumber'],
+      transportType: json['transportType'],
+    );
+  }
+}
+
+/// Route information for booking
+class BookingRoute {
+  final String from;
+  final String to;
+
+  const BookingRoute({required this.from, required this.to});
+
+  factory BookingRoute.fromJson(Map<String, dynamic> json) {
+    return BookingRoute(from: json['from'] ?? '', to: json['to'] ?? '');
   }
 }

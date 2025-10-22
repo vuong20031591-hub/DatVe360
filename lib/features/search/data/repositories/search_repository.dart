@@ -1,8 +1,20 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../models/search_query.dart';
 import '../../../results/data/models/trip.dart';
+import './real_search_repository.dart';
+
+// Provider for SearchRepository (uses RealSearchRepository for popular destinations)
+final searchRepositoryProvider = Provider<SearchRepository>((ref) {
+  return SearchRepository(DioClient.instance);
+});
+
+// Provider for RealSearchRepository (has getPopularDestinations)
+final realSearchRepositoryProvider = Provider<RealSearchRepository>((ref) {
+  return RealSearchRepository(DioClient.instance);
+});
 
 class SearchRepository {
   final DioClient _dioClient;
@@ -74,9 +86,11 @@ class SearchRepository {
         return cachedDestinations;
       }
 
-      // If offline and no cache, return empty
+      // If offline and no cache, throw error
       if (!_connectivityService.isOnline) {
-        return <Map<String, dynamic>>[];
+        throw Exception(
+          'Không có kết nối mạng và không tìm thấy dữ liệu đã lưu',
+        );
       }
 
       // Make API call to get popular destinations
@@ -91,11 +105,10 @@ class SearchRepository {
 
         return destinations;
       } else {
-        return <Map<String, dynamic>>[];
+        throw Exception('Không thể tải danh sách điểm đến');
       }
     } catch (e) {
-      // Return empty list on error instead of throwing
-      return <Map<String, dynamic>>[];
+      rethrow;
     }
   }
 
@@ -108,9 +121,11 @@ class SearchRepository {
         return cachedAirports;
       }
 
-      // If offline and no cache, return empty
+      // If offline and no cache, throw error
       if (!_connectivityService.isOnline) {
-        return <Map<String, dynamic>>[];
+        throw Exception(
+          'Không có kết nối mạng và không tìm thấy dữ liệu đã lưu',
+        );
       }
 
       // Make API call to get all destinations (airports, stations, ports)
@@ -125,11 +140,10 @@ class SearchRepository {
 
         return airports;
       } else {
-        return <Map<String, dynamic>>[];
+        throw Exception('Không thể tải danh sách điểm đến');
       }
     } catch (e) {
-      // Return empty list on error instead of throwing
-      return <Map<String, dynamic>>[];
+      rethrow;
     }
   }
 
@@ -151,6 +165,61 @@ class SearchRepository {
       }).toList();
     } catch (e) {
       throw Exception('Failed to search airports: $e');
+    }
+  }
+
+  // Get destinations that have outgoing routes (có route đi)
+  Future<List<Map<String, dynamic>>> getDestinationsFrom(
+    String transportType,
+  ) async {
+    try {
+      // Check connectivity
+      if (!_connectivityService.isOnline) {
+        throw Exception('Không có kết nối mạng. Vui lòng kiểm tra lại.');
+      }
+
+      final response = await _dioClient.get(
+        '/destinations/from',
+        queryParameters: {'transportType': transportType},
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'] as List;
+        return data.map((item) => item as Map<String, dynamic>).toList();
+      } else {
+        throw Exception('Không thể tải danh sách điểm đi');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Không thể tải danh sách điểm đi');
+    }
+  }
+
+  // Get destinations that have routes from a specific origin
+  Future<List<Map<String, dynamic>>> getDestinationsTo(
+    String fromCode,
+    String transportType,
+  ) async {
+    try {
+      // Check connectivity
+      if (!_connectivityService.isOnline) {
+        throw Exception('Không có kết nối mạng. Vui lòng kiểm tra lại.');
+      }
+
+      final response = await _dioClient.get(
+        '/destinations/to',
+        queryParameters: {'from': fromCode, 'transportType': transportType},
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'] as List;
+        return data.map((item) => item as Map<String, dynamic>).toList();
+      } else {
+        throw Exception('Không thể tải danh sách điểm đến');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Không thể tải danh sách điểm đến');
     }
   }
 }

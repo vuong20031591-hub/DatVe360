@@ -6,6 +6,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/vnpay_webview.dart';
 import '../providers/booking_provider.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/booking_exception.dart';
 
 class StepPayment extends ConsumerStatefulWidget {
   const StepPayment({
@@ -392,11 +393,13 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
 
     if (trip == null) return _getPaymentFee();
 
-    final basePrice = _getBasePrice(trip, selectedClass);
+    final basePricePerSeat = _getBasePrice(trip, selectedClass);
+    final numberOfSeats = selectedSeatData.length;
+    final totalBasePrice = basePricePerSeat * numberOfSeats;
     final seatPrice = _getSeatPrice(selectedSeatData);
-    final taxPrice = (basePrice * 0.1).round();
+    final taxPrice = (totalBasePrice * 0.1).round();
 
-    return basePrice + seatPrice + taxPrice + _getPaymentFee();
+    return totalBasePrice + seatPrice + taxPrice + _getPaymentFee();
   }
 
   String _formatPrice(int price) {
@@ -469,13 +472,11 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
               break;
             default:
               // Fallback cho các phương thức khác
-              final paymentResult = await bookingNotifier.processPayment(
-                booking.id,
-                {
-                  'payment_method': _selectedPaymentMethod,
-                  'amount': _getTotalAmount(),
-                },
-              );
+              final paymentResult = await bookingNotifier
+                  .processPayment(booking.id, {
+                    'payment_method': _selectedPaymentMethod,
+                    'amount': _getTotalAmount(),
+                  });
 
               if (paymentResult != null && paymentResult['success'] == true) {
                 setState(() {
@@ -499,6 +500,36 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
       } else {
         throw Exception('Tạo booking thất bại');
       }
+    } on BookingException catch (e) {
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (mounted) {
+        // Hiển thị dialog cho race condition
+        if (e.isRaceCondition) {
+          _showRaceConditionDialog(e);
+        } else {
+          // Hiển thị snackbar cho các lỗi khác
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.userMessage),
+              backgroundColor: e.canRetry ? Colors.orange : Colors.red,
+              action: e.canRetry
+                  ? SnackBarAction(
+                      label: e.actionMessage,
+                      textColor: Colors.white,
+                      onPressed: () {
+                        // Retry booking
+                        _processPayment();
+                      },
+                    )
+                  : null,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
     } catch (e) {
       setState(() {
         _isProcessing = false;
@@ -513,6 +544,59 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
         );
       }
     }
+  }
+
+  /// Hiển thị dialog khi xảy ra race condition
+  void _showRaceConditionDialog(BookingException exception) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text('Ghế đã hết'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(exception.userMessage, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 16),
+            const Text(
+              'Vui lòng:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('• Chọn ghế khác'),
+            const Text('• Hoặc thử lại để kiểm tra ghế trống'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Quay lại step chọn ghế
+              widget.onPrevious();
+            },
+            child: const Text('Chọn lại ghế'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Retry booking với ghế hiện tại
+              _processPayment();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.lightPrimary,
+            ),
+            child: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _processVNPayPayment(String bookingId) async {
@@ -652,7 +736,11 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
     }
   }
 
-  Future<void> _openMoMoPayment(String paymentUrl, String? deeplink, String bookingId) async {
+  Future<void> _openMoMoPayment(
+    String paymentUrl,
+    String? deeplink,
+    String bookingId,
+  ) async {
     if (!mounted) return;
 
     try {
@@ -671,7 +759,7 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
                   Navigator.of(context).pop({
                     'success': true,
                     'method': 'app',
-                    'message': 'Mở ứng dụng MoMo'
+                    'message': 'Mở ứng dụng MoMo',
                   });
                 },
                 child: const Text('Mở ứng dụng MoMo'),
@@ -682,7 +770,7 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
                   Navigator.of(context).pop({
                     'success': true,
                     'method': 'web',
-                    'message': 'Thanh toán qua web'
+                    'message': 'Thanh toán qua web',
                   });
                 },
                 child: const Text('Thanh toán qua web'),
@@ -695,7 +783,7 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
                 Navigator.of(context).pop({
                   'success': false,
                   'cancelled': true,
-                  'message': 'Người dùng hủy thanh toán'
+                  'message': 'Người dùng hủy thanh toán',
                 });
               },
               child: const Text('Hủy'),
@@ -719,7 +807,10 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
     }
   }
 
-  Future<void> _handleMoMoResult(Map<String, dynamic> result, String bookingId) async {
+  Future<void> _handleMoMoResult(
+    Map<String, dynamic> result,
+    String bookingId,
+  ) async {
     try {
       if (result['success'] == true && result['cancelled'] != true) {
         // Simulate successful payment for demo
@@ -776,7 +867,8 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
 
       if (paymentResult != null && paymentResult['success'] == true) {
         final clientSecret = paymentResult['data']['clientSecret'] as String?;
-        final publishableKey = paymentResult['data']['publishableKey'] as String?;
+        final publishableKey =
+            paymentResult['data']['publishableKey'] as String?;
 
         if (clientSecret != null && publishableKey != null) {
           setState(() {
@@ -796,7 +888,11 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
     }
   }
 
-  Future<void> _openStripePayment(String clientSecret, String publishableKey, String bookingId) async {
+  Future<void> _openStripePayment(
+    String clientSecret,
+    String publishableKey,
+    String bookingId,
+  ) async {
     if (!mounted) return;
 
     try {
@@ -848,17 +944,16 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
                 Navigator.of(context).pop({
                   'success': false,
                   'cancelled': true,
-                  'message': 'Người dùng hủy thanh toán'
+                  'message': 'Người dùng hủy thanh toán',
                 });
               },
               child: const Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop({
-                  'success': true,
-                  'message': 'Thanh toán thành công'
-                });
+                Navigator.of(
+                  context,
+                ).pop({'success': true, 'message': 'Thanh toán thành công'});
               },
               child: const Text('Thanh toán'),
             ),
@@ -881,7 +976,10 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
     }
   }
 
-  Future<void> _handleStripeResult(Map<String, dynamic> result, String bookingId) async {
+  Future<void> _handleStripeResult(
+    Map<String, dynamic> result,
+    String bookingId,
+  ) async {
     try {
       if (result['success'] == true && result['cancelled'] != true) {
         setState(() {
@@ -973,15 +1071,17 @@ class _StepPaymentState extends ConsumerState<StepPayment> {
       return [_buildSummaryRow(theme, 'Giá vé', '0đ')];
     }
 
-    final basePrice = _getBasePrice(trip, selectedClass);
+    final basePricePerSeat = _getBasePrice(trip, selectedClass);
+    final numberOfSeats = selectedSeatData.length;
+    final totalBasePrice = basePricePerSeat * numberOfSeats;
     final seatPrice = _getSeatPrice(selectedSeatData);
-    final taxPrice = (basePrice * 0.1).round();
+    final taxPrice = (totalBasePrice * 0.1).round();
 
     return [
       _buildSummaryRow(
         theme,
-        'Giá vé ${selectedClass?.toUpperCase() ?? ''}',
-        '${_formatPrice(basePrice)}đ',
+        'Giá vé ${selectedClass?.toUpperCase() ?? ''} (${numberOfSeats}x)',
+        '${_formatPrice(totalBasePrice)}đ',
       ),
       if (seatPrice > 0)
         _buildSummaryRow(theme, 'Phí chọn ghế', '${_formatPrice(seatPrice)}đ'),

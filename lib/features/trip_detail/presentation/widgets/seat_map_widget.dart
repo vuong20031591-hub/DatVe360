@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import 'seat_data.dart';
+import 'airplane_seat_map.dart';
+import 'train_seat_map.dart';
+import 'bus_seat_map.dart';
 
 class SeatMapWidget extends ConsumerStatefulWidget {
   const SeatMapWidget({
@@ -11,12 +15,14 @@ class SeatMapWidget extends ConsumerStatefulWidget {
     required this.classId,
     required this.selectedSeatIds,
     required this.onSeatsChanged,
+    this.transportType = 'flight',
   });
 
   final String tripId;
   final String classId;
   final List<String> selectedSeatIds;
   final Function(List<String>, List<SeatData>) onSeatsChanged;
+  final String transportType;
 
   @override
   ConsumerState<SeatMapWidget> createState() => _SeatMapWidgetState();
@@ -24,8 +30,13 @@ class SeatMapWidget extends ConsumerStatefulWidget {
 
 class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
   bool _isLoading = true;
-  List<List<SeatData?>> _seatGrid = [];
   late List<String> _selectedSeats;
+
+  // Data for different transport types
+  List<List<SeatData?>> _airplaneSeatGrid = [];
+  List<TrainCompartment> _trainCompartments = [];
+  List<List<SeatData?>> _busLowerLevel = [];
+  List<List<SeatData?>> _busUpperLevel = [];
 
   @override
   void initState() {
@@ -46,13 +57,25 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
       final response = await _apiCall('/seats/schedule/${widget.tripId}');
       if (response['success'] == true && response['data'] != null) {
         final seatMapData = response['data']['seatMap'] as List;
-        _seatGrid = _convertApiSeatMapToWidget(seatMapData);
+
+        // Parse data based on transport type
+        switch (widget.transportType.toLowerCase()) {
+          case 'flight':
+            _airplaneSeatGrid = _convertApiSeatMapToWidget(seatMapData);
+            break;
+          case 'train':
+            _trainCompartments = _convertToTrainCompartments(seatMapData);
+            break;
+          case 'bus':
+            _convertToBusLevels(seatMapData);
+            break;
+        }
       } else {
         throw Exception('Failed to load seat map');
       }
     } catch (e) {
-      // Handle error - fallback to mock data
-      _seatGrid = _generateMockSeatMap();
+      // Throw error instead of fallback to mock
+      rethrow;
     } finally {
       if (mounted) {
         setState(() {
@@ -69,17 +92,8 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
       final response = await dioClient.dio.get(endpoint);
       return response.data;
     } catch (e) {
-      // Fallback to mock data on error
-      await Future.delayed(const Duration(milliseconds: 500));
-      return {
-        'success': true,
-        'data': {
-          'seatMap': _generateMockSeatMapData(),
-          'layout': '3-3',
-          'totalSeats': 120,
-          'availableSeats': 95,
-        },
-      };
+      // Throw error instead of fallback to mock
+      rethrow;
     }
   }
 
@@ -117,69 +131,81 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
 
   SeatType _parseSeatType(dynamic type) {
     switch (type?.toString()) {
-      case 'business':
-      case 'premium':
-        return SeatType.premium;
-      case 'window':
-        return SeatType.window;
-      case 'aisle':
-        return SeatType.aisle;
-      case 'exit':
-        return SeatType.exit;
+      case 'vip':
+        return SeatType.vip;
+      case 'emergency':
+        return SeatType.emergency;
       default:
         return SeatType.standard;
     }
   }
 
-  List<List<Map<String, dynamic>?>> _generateMockSeatMapData() {
-    final seatMap = <List<Map<String, dynamic>?>>[];
-    final columns = ['A', 'B', 'C', null, 'D', 'E', 'F']; // null = aisle
+  List<TrainCompartment> _convertToTrainCompartments(List seatMapData) {
+    final allCompartments = <TrainCompartment>[];
 
-    for (int row = 1; row <= 20; row++) {
-      final rowSeats = <Map<String, dynamic>?>[];
+    // New API structure: Array of coaches, each with compartments
+    // [{ coachNumber: 1, compartments: [...] }, { coachNumber: 2, compartments: [...] }, ...]
+    for (var coachData in seatMapData) {
+      if (coachData is! Map) continue;
 
-      for (final col in columns) {
-        if (col == null) {
-          rowSeats.add(null); // Aisle space
-          continue;
-        }
+      final compartments = coachData['compartments'] as List?;
+      if (compartments == null) continue;
 
-        final seatId = '$row$col';
+      // Process each compartment in this coach
+      for (var compartmentData in compartments) {
+        if (compartmentData is! Map) continue;
 
-        // Simulate some booked seats
-        String status = 'available';
-        if ((row == 5 && col == 'A') ||
-            (row == 8 && col == 'F') ||
-            (row == 12 && col == 'C')) {
-          status = 'booked';
-        }
+        final leftBerths =
+            (compartmentData['leftBerths'] as List?)
+                ?.map(
+                  (seat) => seat == null
+                      ? null
+                      : SeatData(
+                          id: seat['id'] ?? '',
+                          status: _parseSeatStatus(seat['status']),
+                          type: _parseSeatType(seat['type']),
+                          priceAddon: (seat['priceAddon'] ?? 0).toDouble(),
+                        ),
+                )
+                .toList() ??
+            [];
 
-        String seatType = 'standard';
-        if (row <= 3)
-          seatType = 'premium';
-        else if (col == 'A' || col == 'F')
-          seatType = 'window';
-        else if (col == 'C' || col == 'D')
-          seatType = 'aisle';
+        final rightBerths =
+            (compartmentData['rightBerths'] as List?)
+                ?.map(
+                  (seat) => seat == null
+                      ? null
+                      : SeatData(
+                          id: seat['id'] ?? '',
+                          status: _parseSeatStatus(seat['status']),
+                          type: _parseSeatType(seat['type']),
+                          priceAddon: (seat['priceAddon'] ?? 0).toDouble(),
+                        ),
+                )
+                .toList() ??
+            [];
 
-        rowSeats.add({
-          'id': seatId,
-          'row': row,
-          'col': col,
-          'type': seatType,
-          'status': status,
-          'priceAddon': seatType == 'premium'
-              ? 500000
-              : seatType == 'window' || seatType == 'aisle'
-              ? 50000
-              : 0,
-        });
+        allCompartments.add(
+          TrainCompartment(leftBerths: leftBerths, rightBerths: rightBerths),
+        );
       }
-
-      seatMap.add(rowSeats);
     }
 
-    return seatMap;
+    return allCompartments;
+  }
+
+  void _convertToBusLevels(List seatMapData) {
+    // Assume API returns {lowerLevel: [...], upperLevel: [...]}
+    if (seatMapData.isEmpty) return;
+
+    final data = seatMapData[0] as Map;
+
+    _busLowerLevel = _convertApiSeatMapToWidget(
+      data['lowerLevel'] as List? ?? [],
+    );
+    _busUpperLevel = _convertApiSeatMapToWidget(
+      data['upperLevel'] as List? ?? [],
+    );
   }
 
   @override
@@ -209,156 +235,11 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
           ),
         ),
 
-        // Seat map
+        // Seat map - Factory pattern based on transport type
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Aircraft front indicator
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(
-                      alpha: 0.3,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.flight,
-                        color: theme.colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Đầu máy bay',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Seat grid
-                Column(
-                  children: _seatGrid.asMap().entries.map((entry) {
-                    final rowIndex = entry.key;
-                    final row = entry.value;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Row number
-                          SizedBox(
-                            width: 28,
-                            child: Text(
-                              '${rowIndex + 1}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-
-                          const SizedBox(width: 6),
-
-                          // Left seats (A, B, C)
-                          ...row.take(3).map((seat) => _buildSeat(theme, seat)),
-
-                          // Aisle
-                          const SizedBox(width: 20),
-
-                          // Right seats (D, E, F)
-                          ...row.skip(3).map((seat) => _buildSeat(theme, seat)),
-
-                          const SizedBox(width: 6),
-
-                          // Row number (right)
-                          SizedBox(
-                            width: 28,
-                            child: Text(
-                              '${rowIndex + 1}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Column labels
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(width: 34), // Row number space
-                    // Left column labels
-                    ...'ABC'
-                        .split('')
-                        .map(
-                          (letter) => Container(
-                            width:
-                                AppConstants.seatSize +
-                                AppConstants.seatSpacing * 2,
-                            alignment: Alignment.center,
-                            child: Text(
-                              letter,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                    const SizedBox(width: 20), // Aisle space
-                    // Right column labels
-                    ...'DEF'
-                        .split('')
-                        .map(
-                          (letter) => Container(
-                            width:
-                                AppConstants.seatSize +
-                                AppConstants.seatSpacing * 2,
-                            alignment: Alignment.center,
-                            child: Text(
-                              letter,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                    const SizedBox(width: 38), // Row number space
-                  ],
-                ),
-              ],
-            ),
+            child: _buildSeatMapByType(),
           ),
         ),
 
@@ -399,6 +280,32 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
     );
   }
 
+  Widget _buildSeatMapByType() {
+    switch (widget.transportType.toLowerCase()) {
+      case 'flight':
+        return AirplaneSeatMap(
+          seatGrid: _airplaneSeatGrid,
+          selectedSeats: _selectedSeats,
+          onSeatToggle: _toggleSeat,
+        );
+      case 'train':
+        return TrainSeatMap(
+          compartments: _trainCompartments,
+          selectedSeats: _selectedSeats,
+          onSeatToggle: _toggleSeat,
+        );
+      case 'bus':
+        return BusSeatMap(
+          lowerLevel: _busLowerLevel,
+          upperLevel: _busUpperLevel,
+          selectedSeats: _selectedSeats,
+          onSeatToggle: _toggleSeat,
+        );
+      default:
+        return const Center(child: Text('Loại phương tiện không được hỗ trợ'));
+    }
+  }
+
   Widget _buildLegendItem(ThemeData theme, String label, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -417,64 +324,6 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
     );
   }
 
-  Widget _buildSeat(ThemeData theme, SeatData? seat) {
-    if (seat == null) {
-      return Container(
-        width: AppConstants.seatSize + AppConstants.seatSpacing * 2,
-        height: AppConstants.seatSize + AppConstants.seatSpacing * 2,
-      );
-    }
-
-    final isSelected = _selectedSeats.contains(seat.id);
-    final isSelectable = seat.status == SeatStatus.available || isSelected;
-
-    Color seatColor;
-    switch (seat.status) {
-      case SeatStatus.available:
-        seatColor = isSelected
-            ? AppColors.selectedColor
-            : AppColors.availableColor;
-        break;
-      case SeatStatus.booked:
-        seatColor = AppColors.bookedColor;
-        break;
-      case SeatStatus.selected:
-        seatColor = AppColors.selectedColor;
-        break;
-      case SeatStatus.held:
-        seatColor = AppColors.heldColor;
-        break;
-    }
-
-    return Container(
-      width: AppConstants.seatSize + AppConstants.seatSpacing * 2,
-      height: AppConstants.seatSize + AppConstants.seatSpacing * 2,
-      padding: const EdgeInsets.all(AppConstants.seatSpacing),
-      child: GestureDetector(
-        onTap: isSelectable ? () => _toggleSeat(seat.id) : null,
-        child: Container(
-          decoration: BoxDecoration(
-            color: seatColor,
-            borderRadius: BorderRadius.circular(6),
-            border: isSelected
-                ? Border.all(color: theme.colorScheme.primary, width: 2)
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              seat.id,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _toggleSeat(String seatId) {
     setState(() {
       if (_selectedSeats.contains(seatId)) {
@@ -487,68 +336,53 @@ class _SeatMapWidgetState extends ConsumerState<SeatMapWidget> {
     // Get selected seat data with price addons
     final selectedSeatData = <SeatData>[];
     for (final seatId in _selectedSeats) {
-      for (final row in _seatGrid) {
+      SeatData? foundSeat;
+
+      // Search in airplane grid
+      for (final row in _airplaneSeatGrid) {
         for (final seat in row) {
           if (seat != null && seat.id == seatId) {
-            selectedSeatData.add(seat);
+            foundSeat = seat;
             break;
           }
         }
+        if (foundSeat != null) break;
+      }
+
+      // Search in train compartments
+      if (foundSeat == null) {
+        for (final compartment in _trainCompartments) {
+          for (final berth in [
+            ...compartment.leftBerths,
+            ...compartment.rightBerths,
+          ]) {
+            if (berth != null && berth.id == seatId) {
+              foundSeat = berth;
+              break;
+            }
+          }
+          if (foundSeat != null) break;
+        }
+      }
+
+      // Search in bus levels
+      if (foundSeat == null) {
+        for (final row in [..._busLowerLevel, ..._busUpperLevel]) {
+          for (final seat in row) {
+            if (seat != null && seat.id == seatId) {
+              foundSeat = seat;
+              break;
+            }
+          }
+          if (foundSeat != null) break;
+        }
+      }
+
+      if (foundSeat != null) {
+        selectedSeatData.add(foundSeat);
       }
     }
 
     widget.onSeatsChanged(_selectedSeats, selectedSeatData);
   }
-
-  List<List<SeatData?>> _generateMockSeatMap() {
-    final grid = <List<SeatData?>>[];
-    final columns = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-    for (int row = 1; row <= 20; row++) {
-      final rowSeats = <SeatData?>[];
-
-      for (final col in columns) {
-        final seatId = '$row$col';
-
-        // Simulate some booked seats
-        SeatStatus status = SeatStatus.available;
-        if ((row == 5 && col == 'A') ||
-            (row == 8 && col == 'F') ||
-            (row == 12 && col == 'C')) {
-          status = SeatStatus.booked;
-        }
-
-        rowSeats.add(
-          SeatData(
-            id: seatId,
-            status: status,
-            type: SeatType.standard,
-            priceAddon: 0,
-          ),
-        );
-      }
-
-      grid.add(rowSeats);
-    }
-
-    return grid;
-  }
 }
-
-class SeatData {
-  final String id;
-  final SeatStatus status;
-  final SeatType type;
-  final double priceAddon;
-
-  SeatData({
-    required this.id,
-    required this.status,
-    required this.type,
-    required this.priceAddon,
-  });
-}
-
-enum SeatStatus { available, booked, selected, held }
-
-enum SeatType { standard, premium, exit, window, aisle }

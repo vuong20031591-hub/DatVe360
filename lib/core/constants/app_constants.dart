@@ -7,7 +7,9 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String baseUrl = 'http://10.0.2.2:5000/api/v1';
+  // 10.0.2.2 is Android emulator's localhost
+  // Use localhost for web/desktop, 10.0.2.2 for Android emulator
+  static const String baseUrl = 'http://10.0.2.2:3000/api/v1';
   static const String prodBaseUrl = 'https://api.datve360.com/v1';
   static const Duration requestTimeout = Duration(seconds: 30);
   static const Duration cacheTimeout = Duration(minutes: 5);
@@ -147,6 +149,8 @@ enum PaymentStatus {
 enum SeatType {
   standard('standard', 'Ghế thường'),
   premium('premium', 'Ghế cao cấp'),
+  vip('vip', 'Ghế VIP'),
+  emergency('emergency', 'Ghế lối thoát khẩn cấp'),
   exit('exit', 'Ghế lối thoát'),
   window('window', 'Ghế cửa sổ'),
   aisle('aisle', 'Ghế lối đi');

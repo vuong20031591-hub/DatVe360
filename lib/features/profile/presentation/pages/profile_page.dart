@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,11 +34,16 @@ class ProfilePage extends ConsumerWidget {
                     CircleAvatar(
                       radius: 30,
                       backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Icon(
-                        Icons.person,
-                        size: 32,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
+                      backgroundImage: authState.isAuthenticated && authState.user?.avatar != null
+                        ? _getAvatarImage(authState.user!.avatar!)
+                        : null,
+                      child: (authState.isAuthenticated && authState.user?.avatar != null)
+                        ? null
+                        : Icon(
+                            Icons.person,
+                            size: 32,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -268,13 +274,34 @@ void _showLogoutDialog(BuildContext context, WidgetRef ref) {
           child: const Text('Hủy'),
         ),
         TextButton(
-          onPressed: () {
+          onPressed: () async {
             Navigator.of(context).pop();
-            ref.read(authProvider.notifier).logout();
+            await ref.read(authProvider.notifier).logout();
+
+            // Redirect to home page after logout
+            if (context.mounted) {
+              context.go('/');
+            }
           },
           child: const Text('Đăng xuất'),
         ),
       ],
     ),
   );
+}
+
+/// Helper function to convert avatar string to ImageProvider
+ImageProvider _getAvatarImage(String avatar) {
+  if (avatar.startsWith('data:image')) {
+    // Base64 encoded image
+    final base64String = avatar.split(',')[1];
+    final bytes = base64Decode(base64String);
+    return MemoryImage(bytes);
+  } else if (avatar.startsWith('http')) {
+    // Network URL
+    return NetworkImage(avatar);
+  } else {
+    // Fallback to network image
+    return NetworkImage(avatar);
+  }
 }

@@ -10,6 +10,38 @@ class TripInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final transportType = tripData['transportType'] ?? 'flight';
+
+    // DEBUG: Print để kiểm tra transportType
+    print('🔍 TripInfoCard - transportType: $transportType');
+    print('🔍 TripInfoCard - tripData keys: ${tripData.keys.toList()}');
+
+    // Lấy icon và text động theo transport mode
+    IconData icon;
+    Color iconColor;
+    String title;
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        icon = Icons.flight;
+        iconColor = AppColors.flightColor;
+        title = 'Thông tin chuyến bay';
+        break;
+      case 'train':
+        icon = Icons.train;
+        iconColor = AppColors.trainColor;
+        title = 'Thông tin chuyến tàu';
+        break;
+      case 'bus':
+        icon = Icons.directions_bus;
+        iconColor = AppColors.busColor;
+        title = 'Thông tin chuyến xe';
+        break;
+      default:
+        icon = Icons.directions;
+        iconColor = AppColors.flightColor;
+        title = 'Thông tin chuyến';
+    }
 
     return Card(
       child: Padding(
@@ -20,10 +52,10 @@ class TripInfoCard extends StatelessWidget {
             // Header
             Row(
               children: [
-                Icon(Icons.flight, color: AppColors.flightColor, size: 24),
+                Icon(icon, color: iconColor, size: 24),
                 const SizedBox(width: 8),
                 Text(
-                  'Thông tin chuyến bay',
+                  title,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -47,6 +79,40 @@ class TripInfoCard extends StatelessWidget {
   }
 
   Widget _buildRouteTimeline(ThemeData theme) {
+    final transportType = tripData['transportType'] ?? 'flight';
+
+    // Icon động theo transport mode
+    IconData departureIcon;
+    IconData arrivalIcon;
+    Color departureColor;
+    Color arrivalColor;
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        departureIcon = Icons.flight_takeoff;
+        arrivalIcon = Icons.flight_land;
+        departureColor = AppColors.flightColor;
+        arrivalColor = AppColors.lightSuccess;
+        break;
+      case 'train':
+        departureIcon = Icons.train;
+        arrivalIcon = Icons.train;
+        departureColor = AppColors.trainColor;
+        arrivalColor = AppColors.lightSuccess;
+        break;
+      case 'bus':
+        departureIcon = Icons.directions_bus;
+        arrivalIcon = Icons.directions_bus;
+        departureColor = AppColors.busColor;
+        arrivalColor = AppColors.lightSuccess;
+        break;
+      default:
+        departureIcon = Icons.directions;
+        arrivalIcon = Icons.directions;
+        departureColor = AppColors.flightColor;
+        arrivalColor = AppColors.lightSuccess;
+    }
+
     // Use route timeline from API if available, otherwise fallback to basic route
     final route =
         tripData['route'] is Map && tripData['route']['timeline'] is List
@@ -57,12 +123,12 @@ class TripInfoCard extends StatelessWidget {
             {
               'type': 'departure',
               'time': tripData['departTime'] ?? 'N/A',
-              'airport': '${tripData['from']} (${tripData['fromCode']})',
+              'location': '${tripData['from']} (${tripData['fromCode']})',
             },
             {
               'type': 'arrival',
               'time': tripData['arriveTime'] ?? 'N/A',
-              'airport': '${tripData['to']} (${tripData['toCode']})',
+              'location': '${tripData['to']} (${tripData['toCode']})',
             },
           ];
 
@@ -83,8 +149,8 @@ class TripInfoCard extends StatelessWidget {
                   height: 12,
                   decoration: BoxDecoration(
                     color: stop['type'] == 'departure'
-                        ? AppColors.flightColor
-                        : AppColors.lightSuccess,
+                        ? departureColor
+                        : arrivalColor,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -111,8 +177,8 @@ class TripInfoCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Icon(
                         stop['type'] == 'departure'
-                            ? Icons.flight_takeoff
-                            : Icons.flight_land,
+                            ? departureIcon
+                            : arrivalIcon,
                         size: 16,
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -120,7 +186,7 @@ class TripInfoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    stop['airport'],
+                    stop['location'] ?? stop['airport'] ?? 'N/A',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.8),
                     ),
@@ -136,24 +202,66 @@ class TripInfoCard extends StatelessWidget {
   }
 
   Widget _buildFlightDetails(ThemeData theme) {
+    final transportType = tripData['transportType'] ?? 'flight';
+
+    // Labels động theo transport mode
+    String vehicleLabel;
+    String vehicleNumberLabel;
+    String durationLabel;
+    String checkInMessage;
+    IconData vehicleIcon;
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        vehicleLabel = 'Loại máy bay';
+        vehicleNumberLabel = 'Số hiệu chuyến bay';
+        durationLabel = 'Thời gian bay';
+        checkInMessage =
+            'Vui lòng có mặt tại sân bay trước giờ bay ít nhất 2 tiếng để làm thủ tục check-in.';
+        vehicleIcon = Icons.airplanemode_active;
+        break;
+      case 'train':
+        vehicleLabel = 'Loại tàu';
+        vehicleNumberLabel = 'Số hiệu chuyến tàu';
+        durationLabel = 'Thời gian di chuyển';
+        checkInMessage =
+            'Vui lòng có mặt tại ga trước giờ tàu chạy ít nhất 30 phút để làm thủ tục lên tàu.';
+        vehicleIcon = Icons.train;
+        break;
+      case 'bus':
+        vehicleLabel = 'Loại xe';
+        vehicleNumberLabel = 'Số hiệu chuyến xe';
+        durationLabel = 'Thời gian di chuyển';
+        checkInMessage =
+            'Vui lòng có mặt tại bến xe trước giờ xe chạy ít nhất 15 phút để làm thủ tục lên xe.';
+        vehicleIcon = Icons.directions_bus;
+        break;
+      default:
+        vehicleLabel = 'Loại phương tiện';
+        vehicleNumberLabel = 'Số hiệu chuyến';
+        durationLabel = 'Thời gian di chuyển';
+        checkInMessage = 'Vui lòng có mặt trước giờ khởi hành để làm thủ tục.';
+        vehicleIcon = Icons.directions;
+    }
+
     return Column(
       children: [
-        // Aircraft info
+        // Vehicle info
         _buildDetailRow(
           theme,
-          Icons.airplanemode_active,
-          'Loại máy bay',
-          tripData['aircraft'] ?? 'N/A',
+          vehicleIcon,
+          vehicleLabel,
+          tripData['aircraft'] ?? tripData['vehicleType'] ?? 'N/A',
         ),
 
         const SizedBox(height: 12),
 
-        // Flight number
+        // Vehicle number
         _buildDetailRow(
           theme,
           Icons.confirmation_number,
-          'Số hiệu chuyến bay',
-          '${tripData['carrier']} ${tripData['flightNumber']}',
+          vehicleNumberLabel,
+          _getVehicleNumber(transportType),
         ),
 
         const SizedBox(height: 12),
@@ -162,7 +270,7 @@ class TripInfoCard extends StatelessWidget {
         _buildDetailRow(
           theme,
           Icons.schedule,
-          'Thời gian bay',
+          durationLabel,
           tripData['duration'],
         ),
 
@@ -185,7 +293,7 @@ class TripInfoCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Vui lòng có mặt tại sân bay trước giờ bay ít nhất 2 tiếng để làm thủ tục check-in.',
+                  checkInMessage,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.8),
                   ),
@@ -196,6 +304,24 @@ class TripInfoCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _getVehicleNumber(String transportType) {
+    final carrier = tripData['carrier'] ?? '';
+
+    switch (transportType.toLowerCase()) {
+      case 'flight':
+        final flightNumber = tripData['flightNumber'];
+        return flightNumber != null ? '$carrier $flightNumber' : carrier;
+      case 'train':
+        final trainNumber = tripData['trainNumber'];
+        return trainNumber != null ? '$carrier $trainNumber' : carrier;
+      case 'bus':
+        final busNumber = tripData['busNumber'];
+        return busNumber != null ? '$carrier $busNumber' : carrier;
+      default:
+        return carrier;
+    }
   }
 
   Widget _buildDetailRow(

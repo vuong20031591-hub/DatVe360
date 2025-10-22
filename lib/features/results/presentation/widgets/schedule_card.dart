@@ -15,6 +15,11 @@ class ScheduleCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
+    // DEBUG: Print để kiểm tra transportType
+    print('🔍 ScheduleCard - transportType: ${schedule.transportType}');
+    print('🔍 ScheduleCard - vehicleNumber: ${schedule.vehicleNumber}');
+    print('🔍 ScheduleCard - operatorName: ${schedule.operatorName}');
+
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: AppConstants.defaultPadding,

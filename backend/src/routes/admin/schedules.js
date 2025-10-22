@@ -227,15 +227,6 @@ router.post('/', AuthMiddleware.authorize('admin'), asyncHandler(async (req, res
 // @desc    Update schedule
 // @access  Private (Admin)
 router.put('/:id', AuthMiddleware.authorize('admin'), asyncHandler(async (req, res) => {
-  const schedule = await Schedule.findById(req.params.id);
-
-  if (!schedule) {
-    return res.status(404).json({
-      success: false,
-      message: 'Không tìm thấy lịch trình'
-    });
-  }
-
   const {
     vehicleNumber,
     departureTime,
@@ -251,27 +242,74 @@ router.put('/:id', AuthMiddleware.authorize('admin'), asyncHandler(async (req, r
     validFrom,
     validTo,
     specialPricing,
-    metadata
+    metadata,
+    version // Optimistic locking version
   } = req.body;
 
-  // Update fields
-  if (vehicleNumber !== undefined) schedule.vehicleNumber = vehicleNumber;
-  if (departureTime !== undefined) schedule.departureTime = departureTime;
-  if (arrivalTime !== undefined) schedule.arrivalTime = arrivalTime;
-  if (seatConfiguration !== undefined) schedule.seatConfiguration = seatConfiguration;
-  if (vehicle !== undefined) schedule.vehicle = vehicle;
-  if (gate !== undefined) schedule.gate = gate;
-  if (terminal !== undefined) schedule.terminal = terminal;
-  if (status !== undefined) schedule.status = status;
-  if (isActive !== undefined) schedule.isActive = isActive;
-  if (frequency !== undefined) schedule.frequency = frequency;
-  if (recurringDays !== undefined) schedule.recurringDays = recurringDays;
-  if (validFrom !== undefined) schedule.validFrom = validFrom;
-  if (validTo !== undefined) schedule.validTo = validTo;
-  if (specialPricing !== undefined) schedule.specialPricing = specialPricing;
-  if (metadata !== undefined) schedule.metadata = metadata;
+  // Build update object
+  const updateData = {};
+  if (vehicleNumber !== undefined) updateData.vehicleNumber = vehicleNumber;
+  if (departureTime !== undefined) updateData.departureTime = departureTime;
+  if (arrivalTime !== undefined) updateData.arrivalTime = arrivalTime;
+  if (seatConfiguration !== undefined) updateData.seatConfiguration = seatConfiguration;
+  if (vehicle !== undefined) updateData.vehicle = vehicle;
+  if (gate !== undefined) updateData.gate = gate;
+  if (terminal !== undefined) updateData.terminal = terminal;
+  if (status !== undefined) updateData.status = status;
+  if (isActive !== undefined) updateData.isActive = isActive;
+  if (frequency !== undefined) updateData.frequency = frequency;
+  if (recurringDays !== undefined) updateData.recurringDays = recurringDays;
+  if (validFrom !== undefined) updateData.validFrom = validFrom;
+  if (validTo !== undefined) updateData.validTo = validTo;
+  if (specialPricing !== undefined) updateData.specialPricing = specialPricing;
+  if (metadata !== undefined) updateData.metadata = metadata;
 
-  await schedule.save();
+  // Check if there are pending bookings
+  const Booking = require('../../models/Booking');
+  const pendingBookings = await Booking.countDocuments({
+    scheduleId: req.params.id,
+    status: 'pending'
+  });
+
+  if (pendingBookings > 0 && (seatConfiguration !== undefined || specialPricing !== undefined)) {
+    return res.status(409).json({
+      success: false,
+      message: `Không thể cập nhật giá/ghế khi có ${pendingBookings} booking đang chờ xử lý. Vui lòng đợi hoặc hủy các booking này.`
+    });
+  }
+
+  // Use optimistic locking with version check
+  const query = { _id: req.params.id };
+  if (version !== undefined) {
+    query.__v = version;
+  }
+
+  const schedule = await Schedule.findOneAndUpdate(
+    query,
+    { $set: updateData },
+    {
+      new: true,
+      runValidators: true
+    }
+  );
+
+  if (!schedule) {
+    // Check if schedule exists
+    const existingSchedule = await Schedule.findById(req.params.id);
+    if (!existingSchedule) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy lịch trình'
+      });
+    }
+
+    // Version mismatch
+    return res.status(409).json({
+      success: false,
+      message: 'Lịch trình đã được cập nhật bởi người khác, vui lòng tải lại',
+      currentVersion: existingSchedule.__v
+    });
+  }
 
   // Populate before returning
   await schedule.populate([

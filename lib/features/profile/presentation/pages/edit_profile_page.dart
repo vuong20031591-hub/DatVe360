@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
@@ -18,9 +21,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _imagePicker = ImagePicker();
   
   bool _isLoading = false;
   bool _hasChanges = false;
+  XFile? _selectedImage;
+  bool _avatarRemoved = false; // Track if user explicitly removed avatar
 
   @override
   void initState() {
@@ -159,10 +165,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             CircleAvatar(
               radius: 50,
               backgroundColor: theme.colorScheme.primaryContainer,
-              backgroundImage: user.avatar != null 
-                ? NetworkImage(user.avatar!) 
-                : null,
-              child: user.avatar == null
+              backgroundImage: _selectedImage != null
+                ? FileImage(File(_selectedImage!.path))
+                : (user.avatar != null 
+                  ? NetworkImage(user.avatar!) 
+                  : null) as ImageProvider?,
+              child: _selectedImage == null && user.avatar == null
                 ? Icon(
                     Icons.person,
                     size: 50,
@@ -296,17 +304,90 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  void _changeAvatar() {
-    // TODO: Implement avatar change functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ref.read(localeProvider).languageCode == 'vi'
-            ? 'Tính năng thay đổi ảnh đại diện sẽ được cập nhật sớm'
-            : 'Avatar change feature coming soon',
+  Future<void> _changeAvatar() async {
+    final locale = ref.read(localeProvider);
+    final isVi = locale.languageCode == 'vi';
+
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: Text(isVi ? 'Chụp ảnh' : 'Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: Text(isVi ? 'Chọn từ thư viện' : 'Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              if (_selectedImage != null || (ref.read(authProvider).user?.avatar != null))
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: Text(
+                    isVi ? 'Xóa ảnh' : 'Remove Photo',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _selectedImage = null;
+                      _avatarRemoved = true; // Mark as removed
+                      _hasChanges = true;
+                    });
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = image;
+          _avatarRemoved = false; // Reset removal flag
+          _hasChanges = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ref.read(localeProvider).languageCode == 'vi'
+                ? 'Lỗi chọn ảnh: ${e.toString()}'
+                : 'Error picking image: ${e.toString()}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -322,12 +403,28 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       final authState = ref.read(authProvider);
       final currentUser = authState.user!;
       
+      // Handle avatar update logic
+      String? avatarBase64;
+      
+      if (_avatarRemoved) {
+        // User explicitly removed avatar
+        avatarBase64 = null;
+      } else if (_selectedImage != null) {
+        // User selected new image: convert to base64
+        final bytes = await File(_selectedImage!.path).readAsBytes();
+        avatarBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      } else {
+        // No change: keep current avatar
+        avatarBase64 = currentUser.avatar;
+      }
+      
       final updatedUser = currentUser.copyWith(
         displayName: _displayNameController.text.trim(),
         email: _emailController.text.trim(),
         phoneNumber: _phoneController.text.trim().isEmpty 
           ? null 
           : _phoneController.text.trim(),
+        avatar: avatarBase64,
       );
 
       await ref.read(authProvider.notifier).updateProfile(updatedUser);

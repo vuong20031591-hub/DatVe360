@@ -215,10 +215,10 @@ BookingSchema.methods.updateSeat = function(passengerId, seatNumber) {
   return Promise.reject(new Error('Passenger not found'));
 };
 
-BookingSchema.methods.generateTickets = async function() {
+BookingSchema.methods.generateTickets = async function(session = null) {
   const Ticket = require('./Ticket');
   const tickets = [];
-  
+
   for (const passenger of this.passengers) {
     const ticketData = {
       bookingId: this._id,
@@ -229,11 +229,15 @@ BookingSchema.methods.generateTickets = async function() {
       qrData: await generateQRData(this, passenger),
       status: 'issued'
     };
-    
-    const ticket = await Ticket.create(ticketData);
+
+    // Use session if provided for transaction support
+    const ticket = session
+      ? await Ticket.create([ticketData], { session }).then(docs => docs[0])
+      : await Ticket.create(ticketData);
+
     tickets.push(ticket);
   }
-  
+
   return tickets;
 };
 

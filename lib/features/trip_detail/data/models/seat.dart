@@ -3,8 +3,16 @@ import '../../../../core/constants/app_constants.dart';
 class Seat {
   final String id;
   final String tripId;
-  final int row;
-  final String col;
+
+  // For airplane/bus: row and column
+  final int? row;
+  final String? col;
+
+  // For train: coach (toa xe) and compartment (khoang)
+  final int? coachNumber;
+  final int? compartmentNumber;
+  final String? position; // L1, L2, R1, R2 for train berths
+
   final SeatType type;
   final SeatStatus status;
   final double priceAddon;
@@ -13,8 +21,11 @@ class Seat {
   const Seat({
     required this.id,
     required this.tripId,
-    required this.row,
-    required this.col,
+    this.row,
+    this.col,
+    this.coachNumber,
+    this.compartmentNumber,
+    this.position,
     required this.type,
     required this.status,
     required this.priceAddon,
@@ -25,8 +36,11 @@ class Seat {
     return Seat(
       id: json['id'] ?? '',
       tripId: json['tripId'] ?? '',
-      row: json['row'] ?? 0,
-      col: json['col'] ?? '',
+      row: json['row'],
+      col: json['col'],
+      coachNumber: json['coachNumber'],
+      compartmentNumber: json['compartmentNumber'],
+      position: json['position'],
       type: SeatType.values.firstWhere(
         (e) => e.value == json['type'],
         orElse: () => SeatType.standard,
@@ -44,14 +58,23 @@ class Seat {
     return {
       'id': id,
       'tripId': tripId,
-      'row': row,
-      'col': col,
+      if (row != null) 'row': row,
+      if (col != null) 'col': col,
+      if (coachNumber != null) 'coachNumber': coachNumber,
+      if (compartmentNumber != null) 'compartmentNumber': compartmentNumber,
+      if (position != null) 'position': position,
       'type': type.value,
       'status': status.name,
       'priceAddon': priceAddon,
       'metadata': metadata,
     };
   }
+
+  // Helper to check if this is a train seat
+  bool get isTrainSeat => coachNumber != null && compartmentNumber != null;
+
+  // Helper to check if this is an airplane/bus seat
+  bool get isAirplaneBusSeat => row != null && col != null;
 }
 
 class SeatMap {
@@ -104,7 +127,12 @@ class SeatMap {
 }
 
 extension SeatX on Seat {
-  String get seatNumber => '$row$col';
+  String get seatNumber {
+    if (isTrainSeat) {
+      return id; // For train, use full ID (e.g., C101-L1)
+    }
+    return '$row$col'; // For airplane/bus
+  }
 
   bool get isAvailable => status == SeatStatus.available;
   bool get isBooked => status == SeatStatus.booked;
@@ -113,7 +141,12 @@ extension SeatX on Seat {
 
   bool get isSelectable => isAvailable || isSelected;
 
-  String get displayName => 'Ghế $seatNumber';
+  String get displayName {
+    if (isTrainSeat) {
+      return 'Toa $coachNumber - Khoang $compartmentNumber - $position';
+    }
+    return 'Ghế $seatNumber';
+  }
 }
 
 extension SeatMapX on SeatMap {
@@ -124,9 +157,12 @@ extension SeatMapX on SeatMap {
     );
 
     for (final seat in seats) {
-      final colIndex = cols.indexOf(seat.col);
-      if (colIndex != -1 && seat.row <= rows) {
-        grid[seat.row - 1][colIndex] = seat;
+      // Only process airplane/bus seats (with row and col)
+      if (seat.row != null && seat.col != null) {
+        final colIndex = cols.indexOf(seat.col!);
+        if (colIndex != -1 && seat.row! <= rows) {
+          grid[seat.row! - 1][colIndex] = seat;
+        }
       }
     }
 

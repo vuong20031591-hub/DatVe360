@@ -4,6 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/i18n/l10n.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../data/repositories/search_repository.dart';
 
 class SearchCard extends ConsumerStatefulWidget {
   const SearchCard({super.key, required this.mode, required this.onSearch});
@@ -19,6 +20,10 @@ class _SearchCardState extends ConsumerState<SearchCard> {
   final _formKey = GlobalKey<FormState>();
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
+
+  // Lưu code riêng để gửi lên backend
+  String? _fromCode;
+  String? _toCode;
 
   DateTime? _departDate;
   DateTime? _returnDate;
@@ -344,51 +349,170 @@ class _SearchCardState extends ConsumerState<SearchCard> {
     _toController.text = temp;
   }
 
-  void _showLocationPicker(bool isFrom) {
-    final locations = [
-      {'code': 'HAN', 'name': 'Hà Nội', 'fullName': 'Hà Nội (HAN)'},
-      {'code': 'SGN', 'name': 'TP.HCM', 'fullName': 'TP. Hồ Chí Minh (SGN)'},
-      {'code': 'DAD', 'name': 'Đà Nẵng', 'fullName': 'Đà Nẵng (DAD)'},
-      {'code': 'CXR', 'name': 'Nha Trang', 'fullName': 'Nha Trang (CXR)'},
-      {'code': 'DLI', 'name': 'Đà Lạt', 'fullName': 'Đà Lạt (DLI)'},
-      {'code': 'PQC', 'name': 'Phú Quốc', 'fullName': 'Phú Quốc (PQC)'},
-      {'code': 'VCA', 'name': 'Cần Thơ', 'fullName': 'Cần Thơ (VCA)'},
-      {'code': 'HPH', 'name': 'Hải Phòng', 'fullName': 'Hải Phòng (HPH)'},
-    ];
+  Future<void> _showLocationPicker(bool isFrom) async {
+    // Fetch destinations from API
+    List<Map<String, dynamic>> locations = [];
+    bool isLoading = true;
+    String? errorMessage;
 
+    // Show dialog with loading state
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isFrom ? 'Chọn điểm đi' : 'Chọn điểm đến'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: locations.length,
-            itemBuilder: (context, index) {
-              final location = locations[index];
-              return ListTile(
-                title: Text(location['fullName']!),
-                onTap: () {
-                  if (isFrom) {
-                    _fromController.text = location['fullName']!;
-                  } else {
-                    _toController.text = location['fullName']!;
-                  }
-                  Navigator.pop(context);
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          // Fetch data on first build
+          if (isLoading && locations.isEmpty && errorMessage == null) {
+            _fetchDestinations(isFrom)
+                .then((destinations) {
+                  setState(() {
+                    locations = destinations;
+                    isLoading = false;
+                  });
+                })
+                .catchError((error) {
+                  setState(() {
+                    errorMessage = error.toString();
+                    isLoading = false;
+                  });
+                });
+          }
+
+          return AlertDialog(
+            title: Text(isFrom ? 'Chọn điểm đi' : 'Chọn điểm đến'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Không thể tải danh sách điểm đến',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            errorMessage!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                isLoading = true;
+                                errorMessage = null;
+                              });
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Thử lại'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : locations.isEmpty
+                  ? const Center(child: Text('Không có điểm đến nào'))
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: locations.length,
+                      itemBuilder: (context, index) {
+                        final location = locations[index];
+                        final code = location['code'] ?? '';
+                        final name = location['name'] ?? '';
+                        final city = location['city'] ?? '';
+                        final displayName = '$city - $name ($code)';
+
+                        return ListTile(
+                          leading: Icon(
+                            _getDestinationIcon(location['type'] ?? ''),
+                          ),
+                          title: Text(displayName),
+                          subtitle: Text(location['type'] ?? ''),
+                          onTap: () {
+                            // Lưu displayName để hiển thị, code để gửi backend
+                            if (isFrom) {
+                              _fromController.text = displayName;
+                              _fromCode = code;
+                            } else {
+                              _toController.text = displayName;
+                              _toCode = code;
+                            }
+                            Navigator.pop(dialogContext);
+                          },
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Hủy'),
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchDestinations(bool isFrom) async {
+    try {
+      final searchRepo = ref.read(searchRepositoryProvider);
+
+      // Map transport mode to API transportType
+      String transportType;
+      switch (widget.mode) {
+        case TransportMode.flight:
+          transportType = 'flight';
+          break;
+        case TransportMode.train:
+          transportType = 'train';
+          break;
+        case TransportMode.bus:
+          transportType = 'bus';
+          break;
+      }
+
+      // Nếu chọn điểm đi, lấy tất cả destinations có route đi
+      if (isFrom) {
+        return await searchRepo.getDestinationsFrom(transportType);
+      }
+
+      // Nếu chọn điểm đến, lấy destinations có route từ điểm đi đã chọn
+      if (_fromCode != null) {
+        return await searchRepo.getDestinationsTo(_fromCode!, transportType);
+      }
+
+      // Fallback: Nếu chưa chọn điểm đi, lấy tất cả
+      return await searchRepo.getDestinationsFrom(transportType);
+    } catch (e) {
+      throw Exception('Lỗi kết nối: ${e.toString()}');
+    }
+  }
+
+  IconData _getDestinationIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'airport':
+        return Icons.flight;
+      case 'bus_station':
+        return Icons.directions_bus;
+      case 'train_station':
+        return Icons.train;
+      case 'port':
+        return Icons.directions_boat;
+      default:
+        return Icons.location_on;
+    }
   }
 
   void _selectDate(bool isDeparture) async {
@@ -603,15 +727,11 @@ class _SearchCardState extends ConsumerState<SearchCard> {
   }
 
   void _handleSearch() {
-    print('DEBUG: _handleSearch called');
-
     if (!_formKey.currentState!.validate()) {
-      print('DEBUG: Form validation failed');
       return;
     }
 
     if (_departDate == null) {
-      print('DEBUG: Depart date is null');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày đi')));
@@ -619,7 +739,6 @@ class _SearchCardState extends ConsumerState<SearchCard> {
     }
 
     if (_isRoundTrip && _returnDate == null) {
-      print('DEBUG: Round trip but return date is null');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày về')));
@@ -628,8 +747,12 @@ class _SearchCardState extends ConsumerState<SearchCard> {
 
     final searchData = {
       'mode': widget.mode,
-      'from': _fromController.text,
-      'to': _toController.text,
+      'from':
+          _fromCode ??
+          _fromController.text, // Dùng code nếu có, fallback displayName
+      'to':
+          _toCode ??
+          _toController.text, // Dùng code nếu có, fallback displayName
       'departDate': _departDate,
       'returnDate': _returnDate,
       'isRoundTrip': _isRoundTrip,
@@ -638,7 +761,6 @@ class _SearchCardState extends ConsumerState<SearchCard> {
       'infants': _infants,
     };
 
-    print('DEBUG: Search data: $searchData');
     widget.onSearch(searchData);
   }
 }

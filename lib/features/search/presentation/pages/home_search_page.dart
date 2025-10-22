@@ -14,6 +14,7 @@ import '../widgets/transport_mode_tabs.dart';
 import '../widgets/destination_card.dart';
 import '../widgets/recent_searches_section.dart';
 import '../providers/search_provider.dart';
+import '../providers/popular_destinations_provider.dart';
 import '../../data/models/search_query.dart';
 
 class HomeSearchPage extends ConsumerStatefulWidget {
@@ -211,7 +212,7 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     print('DEBUG: Navigated to results page');
   }
 
-  void _selectDestination(Map<String, String> destination) {
+  void _selectDestination(Map<String, dynamic> destination) {
     // TODO: Pre-fill search form with destination
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -220,91 +221,17 @@ class _HomeSearchPageState extends ConsumerState<HomeSearchPage>
     );
   }
 
-  List<Map<String, String>> _getPopularDestinations() {
-    switch (_selectedMode) {
-      case TransportMode.flight:
-        return [
-          {
-            'name': 'Hồ Chí Minh',
-            'price': '1.200.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Đà Nẵng',
-            'price': '800.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Nha Trang',
-            'price': '900.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Phú Quốc',
-            'price': '1.500.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-          },
-        ];
-      case TransportMode.train:
-        return [
-          {
-            'name': 'Hồ Chí Minh',
-            'price': '600.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Huế',
-            'price': '400.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1555400082-8c5cd5b3c3d1?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Đà Nẵng',
-            'price': '500.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Nha Trang',
-            'price': '550.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?w=400&h=300&fit=crop',
-          },
-        ];
-      case TransportMode.bus:
-        return [
-          {
-            'name': 'Hồ Chí Minh',
-            'price': '300.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Hải Phòng',
-            'price': '200.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Vinh',
-            'price': '250.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-          },
-          {
-            'name': 'Huế',
-            'price': '280.000đ',
-            'image':
-                'https://images.unsplash.com/photo-1555400082-8c5cd5b3c3d1?w=400&h=300&fit=crop',
-          },
-        ];
-    }
-    // This should never be reached since all enum values are covered
-    return [];
+  List<Map<String, dynamic>> _getPopularDestinations() {
+    // Watch provider to rebuild when data changes
+    ref.watch(popularDestinationsProvider);
+    
+    // Filter by selected transport mode
+    final transportType = _selectedMode == TransportMode.flight
+        ? 'flight'
+        : _selectedMode == TransportMode.train
+            ? 'train'
+            : 'bus';
+    
+    return ref.read(popularDestinationsProvider.notifier).filterByType(transportType);
   }
 }

@@ -21,6 +21,7 @@ class _VNPayWebViewState extends State<VNPayWebView> {
   late final WebViewController _controller;
   bool _isLoading = true;
   String? _error;
+  bool _hasReturned = false; // Flag to prevent multiple pops
 
   @override
   void initState() {
@@ -74,11 +75,13 @@ class _VNPayWebViewState extends State<VNPayWebView> {
     print('VNPayWebView URL changed: $url'); // Debug log
 
     // Check if this is a return URL from VNPay
-    if (url.contains('/api/v1/payments/vnpay/return') ||
-        url.contains('/payments/vnpay/return') ||
-        url.contains('payment/success') ||
-        url.contains('payment/failed') ||
-        url.contains('vnp_ResponseCode')) {
+    if (!_hasReturned &&
+        (url.contains('/api/v1/payments/vnpay/return') ||
+            url.contains('/payments/vnpay/return') ||
+            url.contains('payment/success') ||
+            url.contains('payment/failed') ||
+            url.contains('vnp_ResponseCode'))) {
+      _hasReturned = true; // Mark as returned to prevent multiple calls
       print('VNPayWebView detected return URL: $url'); // Debug log
 
       final uri = Uri.parse(url);
@@ -104,7 +107,13 @@ class _VNPayWebViewState extends State<VNPayWebView> {
       };
 
       print('VNPayWebView payment result: $result'); // Debug log
-      widget.onPaymentResult(result);
+
+      // Use delayed callback to avoid Navigator assertion error
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          widget.onPaymentResult(result);
+        }
+      });
     }
   }
 

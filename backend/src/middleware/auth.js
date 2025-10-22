@@ -1,13 +1,14 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../config/logger');
+const redis = require('../config/redis');
 
 class AuthMiddleware {
   // Verify JWT token
   static async authenticate(req, res, next) {
     try {
       const token = AuthMiddleware.extractToken(req);
-      
+
       if (!token) {
         return res.status(401).json({
           success: false,
@@ -15,9 +16,21 @@ class AuthMiddleware {
         });
       }
 
+      // Check if token is blacklisted (logged out)
+      if (redis.isConnected) {
+        const isBlacklisted = await redis.exists(`blacklist:${token}`);
+        if (isBlacklisted) {
+          logger.authLogger.warn('Blacklisted token used', { token: token.substring(0, 20) + '...' });
+          return res.status(401).json({
+            success: false,
+            message: 'Token đã bị vô hiệu hóa, vui lòng đăng nhập lại'
+          });
+        }
+      }
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.userId).select('-password');
-      
+
       if (!user || !user.isActive) {
         return res.status(401).json({
           success: false,
@@ -30,14 +43,14 @@ class AuthMiddleware {
       next();
     } catch (error) {
       logger.authLogger.error('Authentication failed', { error: error.message });
-      
+
       if (error.name === 'JsonWebTokenError') {
         return res.status(401).json({
           success: false,
           message: 'Token không hợp lệ'
         });
       }
-      
+
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,

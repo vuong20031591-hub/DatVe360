@@ -232,11 +232,26 @@ class _ResultsPageState extends ConsumerState<ResultsPage> {
   }
 
   void _showFilterSheet() {
+    final searchState = ref.read(searchProvider);
+
+    // Extract unique operators từ schedules
+    final availableOperators =
+        searchState.schedules
+            .map((schedule) => schedule.operatorName)
+            .toSet()
+            .toList()
+          ..sort();
+
+    // Get transport mode từ lastQuery
+    final transportMode = searchState.lastQuery?.mode ?? TransportMode.flight;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => FilterBottomSheet(
         currentFilters: _filters,
+        transportMode: transportMode,
+        availableOperators: availableOperators,
         onApply: (filters) {
           setState(() {
             _filters = filters;

@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/app_providers.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../data/repositories/booking_repository.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/booking_exception.dart';
 
 // Booking repository provider
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
@@ -111,17 +113,29 @@ class BookingNotifier extends Notifier<BookingState> {
     }
   }
 
-  /// Get user bookings
-  Future<List<Booking>> getUserBookings(String userId) async {
+  /// Get user bookings with optional status filter
+  Future<List<Booking>> getUserBookings({BookingStatus? status}) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final bookings = await _repository.getUserBookings(userId);
+      // Note: Backend API doesn't accept userId parameter, it uses JWT token
+      final bookings = await _repository.getUserBookings('');
+      print('🔍 DEBUG: Repository returned ${bookings.length} bookings');
 
-      state = state.copyWith(isLoading: false, userBookings: bookings);
+      // Filter by status if provided
+      final filteredBookings = status != null
+          ? bookings.where((b) => b.status == status).toList()
+          : bookings;
+      print('🔍 DEBUG: After filter: ${filteredBookings.length} bookings');
 
-      return bookings;
+      state = state.copyWith(isLoading: false, userBookings: filteredBookings);
+      print(
+        '🔍 DEBUG: State updated with ${state.userBookings.length} bookings',
+      );
+
+      return filteredBookings;
     } catch (e) {
+      print('❌ DEBUG: Error in getUserBookings: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
       return [];
     }
@@ -142,6 +156,10 @@ class BookingNotifier extends Notifier<BookingState> {
 
       state = state.copyWith(isLoading: false);
       return success;
+    } on BookingException catch (e) {
+      // Handle BookingException with user-friendly message
+      state = state.copyWith(isLoading: false, error: e.userMessage);
+      rethrow; // Re-throw để UI có thể handle
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
@@ -194,9 +212,7 @@ class BookingNotifier extends Notifier<BookingState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final result = await _repository.createMoMoPayment(
-        bookingId: bookingId,
-      );
+      final result = await _repository.createMoMoPayment(bookingId: bookingId);
 
       state = state.copyWith(isLoading: false);
       return result;

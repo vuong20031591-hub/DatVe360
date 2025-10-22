@@ -96,16 +96,33 @@ class ApiService {
   }
 
   Future<void> logout() async {
+    // Clear local data first (logout should always succeed from user perspective)
+    await _clearAllUserData();
+
+    // Then try to notify backend (best effort)
     try {
       final refreshToken = await _storage.read('refresh_token');
       await _dioClient.post(
         '/auth/logout',
         data: {if (refreshToken != null) 'refreshToken': refreshToken},
       );
-    } finally {
-      await clearAuthToken();
-      await _storage.delete('refresh_token');
+    } catch (e) {
+      // Ignore backend errors - user is already logged out locally
+      debugPrint('Logout API call failed (ignored): $e');
     }
+  }
+
+  /// Clear all user-related data from local storage
+  Future<void> _clearAllUserData() async {
+    await Future.wait([
+      clearAuthToken(),
+      _storage.delete('refresh_token'),
+      _storage.delete('current_user'),
+      // Clear any other user-specific data
+      _storage.delete('user_preferences'),
+      _storage.delete('search_history'),
+      _storage.delete('recent_bookings'),
+    ]);
   }
 
   Future<Map<String, dynamic>> getCurrentUser() async {
@@ -129,9 +146,7 @@ class ApiService {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> forgotPassword({
-    required String email,
-  }) async {
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await _dioClient.post(
       '/auth/forgot-password',
       data: {'email': email},

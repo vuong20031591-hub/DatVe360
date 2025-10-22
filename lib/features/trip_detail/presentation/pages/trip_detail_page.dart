@@ -185,6 +185,7 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
                         tripId: widget.tripId,
                         classId: _selectedClassId!,
                         selectedSeatIds: _selectedSeatIds,
+                        transportType: _tripData?['transportType'] ?? 'flight',
                         onSeatsChanged: (seatIds, seatData) {
                           setState(() {
                             _selectedSeatIds = seatIds;
@@ -367,7 +368,16 @@ class _TripDetailPageState extends ConsumerState<TripDetailPage>
     return {
       'id': schedule.id,
       'carrier': schedule.operatorName,
-      'flightNumber': schedule.vehicleNumber,
+      // Add vehicle number for all transport types
+      'flightNumber': schedule.transportType == 'flight'
+          ? schedule.vehicleNumber
+          : null,
+      'trainNumber': schedule.transportType == 'train'
+          ? schedule.vehicleNumber
+          : null,
+      'busNumber': schedule.transportType == 'bus'
+          ? schedule.vehicleNumber
+          : null,
       'from': schedule.from,
       'to': schedule.to,
       'fromCode': schedule.fromCode,

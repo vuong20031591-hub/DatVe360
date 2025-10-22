@@ -23,157 +23,168 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final locale = ref.watch(locale_providers.localeProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cài đặt'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Cài đặt'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-                // Account section
-                Text(
-                  'Tài khoản',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildSettingItem(
-                  context,
-                  'Thông tin cá nhân',
-                  currentUser?.displayName ?? 'Chưa cập nhật',
-                  Icons.person,
-                  Colors.blue,
-                  onTap: _showProfileDialog,
-                ),
-                _buildSettingItem(
-                  context,
-                  'Đổi mật khẩu',
-                  'Thay đổi mật khẩu đăng nhập',
-                  Icons.lock,
-                  Colors.orange,
-                  onTap: _showChangePasswordDialog,
-                ),
-                const SizedBox(height: 24),
+          // Account section
+          Text(
+            'Tài khoản',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildSettingItem(
+            context,
+            'Thông tin cá nhân',
+            currentUser?.displayName ?? 'Chưa cập nhật',
+            Icons.person,
+            Colors.blue,
+            onTap: _showProfileDialog,
+          ),
+          _buildSettingItem(
+            context,
+            'Đổi mật khẩu',
+            'Thay đổi mật khẩu đăng nhập',
+            Icons.lock,
+            Colors.orange,
+            onTap: _showChangePasswordDialog,
+          ),
+          const SizedBox(height: 24),
 
-                // System section
-                Text(
-                  'Hệ thống',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+          // System section
+          Text(
+            'Hệ thống',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildSwitchItem(
+            context,
+            'Thông báo',
+            'Nhận thông báo từ hệ thống',
+            Icons.notifications,
+            Colors.purple,
+            true, // Default value
+            (value) {
+              // TODO: Update notification preferences
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    value ? 'Đã bật thông báo' : 'Đã tắt thông báo',
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildSwitchItem(
-                  context,
-                  'Thông báo',
-                  'Nhận thông báo từ hệ thống',
-                  Icons.notifications,
-                  Colors.purple,
-                  true, // Default value
-                  (value) {
-                    // TODO: Update notification preferences
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(value ? 'Đã bật thông báo' : 'Đã tắt thông báo')),
-                    );
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  'Ngôn ngữ',
-                  locale.languageCode == 'vi' ? 'Tiếng Việt' : 'English',
-                  Icons.language,
-                  Colors.green,
-                  onTap: _showLanguageDialog,
-                ),
-                _buildSettingItem(
-                  context,
-                  'Giao diện',
-                  themeMode == ThemeMode.dark ? 'Tối' : themeMode == ThemeMode.light ? 'Sáng' : 'Hệ thống',
-                  Icons.palette,
-                  Colors.pink,
-                  onTap: _showThemeDialog,
-                ),
-                const SizedBox(height: 24),
+              );
+            },
+          ),
+          _buildSettingItem(
+            context,
+            'Ngôn ngữ',
+            locale.languageCode == 'vi' ? 'Tiếng Việt' : 'English',
+            Icons.language,
+            Colors.green,
+            onTap: _showLanguageDialog,
+          ),
+          _buildSettingItem(
+            context,
+            'Giao diện',
+            themeMode == ThemeMode.dark
+                ? 'Tối'
+                : themeMode == ThemeMode.light
+                ? 'Sáng'
+                : 'Hệ thống',
+            Icons.palette,
+            Colors.pink,
+            onTap: _showThemeDialog,
+          ),
+          const SizedBox(height: 24),
 
-                // Data section
-                Text(
-                  'Dữ liệu',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Data section
+          Text(
+            'Dữ liệu',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildSettingItem(
+            context,
+            'Sao lưu',
+            'Sao lưu dữ liệu hệ thống',
+            Icons.backup,
+            Colors.teal,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Chức năng sao lưu đang được phát triển'),
                 ),
-                const SizedBox(height: 12),
-                _buildSettingItem(
-                  context,
-                  'Sao lưu',
-                  'Sao lưu dữ liệu hệ thống',
-                  Icons.backup,
-                  Colors.teal,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chức năng sao lưu đang được phát triển')),
-                    );
-                  },
+              );
+            },
+          ),
+          _buildSettingItem(
+            context,
+            'Khôi phục',
+            'Khôi phục từ bản sao lưu',
+            Icons.restore,
+            Colors.indigo,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Chức năng khôi phục đang được phát triển'),
                 ),
-                _buildSettingItem(
-                  context,
-                  'Khôi phục',
-                  'Khôi phục từ bản sao lưu',
-                  Icons.restore,
-                  Colors.indigo,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chức năng khôi phục đang được phát triển')),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
 
-                // About section
-                Text(
-                  'Về ứng dụng',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+          // About section
+          Text(
+            'Về ứng dụng',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildSettingItem(
+            context,
+            'Phiên bản',
+            '1.0.0',
+            Icons.info,
+            Colors.grey,
+            onTap: null,
+          ),
+          _buildSettingItem(
+            context,
+            'Trợ giúp',
+            'Hướng dẫn sử dụng',
+            Icons.help,
+            Colors.amber,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Trang trợ giúp đang được phát triển'),
                 ),
-                const SizedBox(height: 12),
-                _buildSettingItem(
-                  context,
-                  'Phiên bản',
-                  '1.0.0',
-                  Icons.info,
-                  Colors.grey,
-                  onTap: null,
-                ),
-                _buildSettingItem(
-                  context,
-                  'Trợ giúp',
-                  'Hướng dẫn sử dụng',
-                  Icons.help,
-                  Colors.amber,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Trang trợ giúp đang được phát triển')),
-                    );
-                  },
-                ),
-                const SizedBox(height: 32),
+              );
+            },
+          ),
+          const SizedBox(height: 32),
 
-                // Logout button
-                ElevatedButton.icon(
-                  onPressed: _handleLogout,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.all(16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Đăng xuất'),
-                ),
+          // Logout button
+          ElevatedButton.icon(
+            onPressed: _handleLogout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.logout),
+            label: const Text('Đăng xuất'),
+          ),
         ],
       ),
     );
@@ -228,10 +239,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: Switch(
-          value: value,
-          onChanged: onChanged,
-        ),
+        trailing: Switch(value: value, onChanged: onChanged),
       ),
     );
   }
@@ -240,8 +248,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final authState = ref.read(authProvider);
     final currentUser = authState.user;
 
-    final nameController = TextEditingController(text: currentUser?.displayName ?? '');
-    final phoneController = TextEditingController(text: currentUser?.phoneNumber ?? '');
+    final nameController = TextEditingController(
+      text: currentUser?.displayName ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: currentUser?.phoneNumber ?? '',
+    );
 
     showDialog(
       context: context,
@@ -358,7 +370,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (newPasswordController.text != confirmPasswordController.text) {
+              if (newPasswordController.text !=
+                  confirmPasswordController.text) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Mật khẩu xác nhận không khớp'),
@@ -428,7 +441,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               groupValue: currentLocale.languageCode,
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(locale_providers.localeProvider.notifier).setLocale(Locale(value));
+                  ref
+                      .read(locale_providers.localeProvider.notifier)
+                      .setLocale(Locale(value));
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Đã chuyển sang Tiếng Việt')),
@@ -442,7 +457,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               groupValue: currentLocale.languageCode,
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(locale_providers.localeProvider.notifier).setLocale(Locale(value));
+                  ref
+                      .read(locale_providers.localeProvider.notifier)
+                      .setLocale(Locale(value));
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Changed to English')),
@@ -472,10 +489,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               groupValue: currentTheme,
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(theme_providers.themeProvider.notifier).setThemeMode(value);
+                  ref
+                      .read(theme_providers.themeProvider.notifier)
+                      .setThemeMode(value);
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã chuyển sang giao diện sáng')),
+                    const SnackBar(
+                      content: Text('Đã chuyển sang giao diện sáng'),
+                    ),
                   );
                 }
               },
@@ -486,10 +507,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               groupValue: currentTheme,
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(theme_providers.themeProvider.notifier).setThemeMode(value);
+                  ref
+                      .read(theme_providers.themeProvider.notifier)
+                      .setThemeMode(value);
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã chuyển sang giao diện tối')),
+                    const SnackBar(
+                      content: Text('Đã chuyển sang giao diện tối'),
+                    ),
                   );
                 }
               },
@@ -500,10 +525,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               groupValue: currentTheme,
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(theme_providers.themeProvider.notifier).setThemeMode(value);
+                  ref
+                      .read(theme_providers.themeProvider.notifier)
+                      .setThemeMode(value);
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã chuyển sang giao diện theo hệ thống')),
+                    const SnackBar(
+                      content: Text('Đã chuyển sang giao diện theo hệ thống'),
+                    ),
                   );
                 }
               },
@@ -529,27 +558,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onPressed: () async {
               Navigator.pop(context);
 
-              try {
-                await ref.read(authRepositoryProvider).logout();
+              // Logout always succeeds (clears local data)
+              await ref.read(authProvider.notifier).logout();
 
-                if (mounted) {
-                  context.go('/login');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đã đăng xuất thành công'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Lỗi đăng xuất: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+              if (mounted) {
+                context.go('/');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã đăng xuất thành công'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
